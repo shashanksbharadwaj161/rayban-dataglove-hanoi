@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Expand-Archive -Path files.zip -DestinationPath . -Force)",
+      "PowerShell(Expand-Archive -Path \"C:\\\\META AR GLASSES\\\\files.zip\" -DestinationPath \"C:\\\\META AR GLASSES\" -Force)",
+      "Bash(git --version)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git add *)"
+    ]
+  }
+}
