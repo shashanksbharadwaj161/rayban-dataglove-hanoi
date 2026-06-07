@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日本語面接 Flashcards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg: #0F1117;
+  --card-bg: #1E2130;
+  --interviewer-bg: #0D2137;
+  --answer-bg: #0D2D1A;
+  --interviewer-accent: #4FC3F7;
+  --answer-accent: #81C995;
+  --must-know: #FFD700;
+  --very-important: #90EE90;
+  --important: #FFA500;
+  --again: #CF6679;
+  --hard: #7B8CDE;
+  --easy: #5CB85C;
+  --text-primary: #FFFFFF;
+  --text-secondary: #AAAAAA;
+  --text-muted: #666880;
+  --border: #2A2D3E;
+  --nav-bg: #161825;
+  --font-jp: 'Noto Sans JP', sans-serif;
+  --font-ui: 'Inter', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── NAV ─── */
+#nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--border);
+  height: 56px;
+  display: flex; align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+}
+#nav .nav-brand {
+  font-family: var(--font-jp);
+  font-size: 15px; font-weight: 700;
+  color: var(--text-primary);
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+#nav .nav-modes {
+  display: flex; gap: 4px;
+  flex: 1; justify-content: center;
+}
+.nav-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 16px; border-radius: 20px;
+  cursor: pointer; font-size: 13px; font-weight: 500;
+  transition: all 0.2s;
+}
+.nav-btn:hover { border-color: var(--interviewer-accent); color: var(--text-primary); }
+.nav-btn.active {
+  background: var(--interviewer-accent);
+  border-color: var(--interviewer-accent);
+  color: #000;
+}
+#nav .nav-settings {
+  margin-left: auto;
+  background: transparent; border: none;
+  font-size: 20px; cursor: pointer; padding: 4px;
+  line-height: 1;
+}
+
+/* ─── SCREENS ─── */
+#app { padding-top: 56px; }
+.screen { display: none; min-height: calc(100vh - 56px); padding: 24px 16px; }
+.screen.active { display: block; }
+
+/* ─── SCREEN 0: WELCOME ─── */
+#screen-welcome {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 40px 24px;
+}
+.welcome-logo {
+  font-family: var(--font-jp);
+  font-size: clamp(32px, 8vw, 56px); font-weight: 700;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #4FC3F7, #81C995);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.welcome-subtitle { color: var(--text-secondary); font-size: 16px; margin-bottom: 32px; }
+.welcome-stats {
+  background: var(--card-bg); border-radius: 16px;
+  padding: 24px 32px; margin-bottom: 32px;
+  border: 1px solid var(--border);
+}
+.stats-count { font-size: 48px; font-weight: 700; color: var(--interviewer-accent); }
+.stats-label { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
+.welcome-actions { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 340px; }
+.btn-primary {
+  background: linear-gradient(135deg, var(--interviewer-accent), #29B6F6);
+  color: #000; border: none; border-radius: 12px;
+  padding: 16px 32px; font-size: 18px; font-weight: 700;
+  cursor: pointer; transition: transform 0.15s, opacity 0.15s;
+  width: 100%;
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-secondary {
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 24px; font-size: 14px; cursor: pointer;
+  transition: all 0.2s; width: 100%;
+}
+.btn-secondary:hover { border-color: var(--interviewer-accent); color: var(--text-primary); }
+
+.upload-zone {
+  background: var(--card-bg); border: 2px dashed var(--border);
+  border-radius: 16px; padding: 24px;
+  width: 100%; max-width: 400px; margin-top: 8px;
+  transition: border-color 0.2s;
+}
+.upload-zone:hover { border-color: var(--interviewer-accent); }
+.upload-zone p { color: var(--text-secondary); font-size: 13px; }
+.upload-zone input { display: none; }
+.upload-zone label { cursor: pointer; color: var(--interviewer-accent); }
+
+/* ─── SCREEN 1: SETUP ─── */
+#screen-setup { max-width: 600px; margin: 0 auto; }
+.setup-title { font-size: 22px; font-weight: 700; margin-bottom: 24px; }
+.setup-section {
+  background: var(--card-bg); border-radius: 16px;
+  padding: 20px; margin-bottom: 16px;
+  border: 1px solid var(--border);
+}
+.setup-section h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 14px; }
+.radio-group { display: flex; flex-direction: column; gap: 10px; }
+.radio-option {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px; cursor: pointer;
+  border: 1px solid transparent; transition: all 0.15s;
+}
+.radio-option:hover { background: rgba(79, 195, 247, 0.05); border-color: var(--border); }
+.radio-option input[type=radio] { display: none; }
+.radio-option .radio-dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--border); flex-shrink: 0;
+  transition: all 0.15s; position: relative;
+}
+.radio-option.checked .radio-dot {
+  border-color: var(--interviewer-accent);
+  background: var(--interviewer-accent);
+}
+.radio-option.checked .radio-dot::after {
+  content: ''; position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 6px; height: 6px; border-radius: 50%; background: #000;
+}
+.radio-option.checked { border-color: var(--interviewer-accent); background: rgba(79, 195, 247, 0.06); }
+.radio-label { flex: 1; font-size: 14px; }
+.radio-count {
+  font-size: 12px; color: var(--text-muted);
+  background: var(--bg); border-radius: 12px; padding: 2px 8px;
+}
+.category-dropdown {
+  margin-top: 8px; padding: 10px 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text-primary); font-size: 14px;
+  width: 100%; cursor: pointer; display: none;
+}
+.category-dropdown option { background: var(--card-bg); }
+.toggle-group { display: flex; gap: 8px; }
+.toggle-btn {
+  flex: 1; padding: 10px; border-radius: 10px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text-secondary); cursor: pointer; font-size: 14px;
+  transition: all 0.15s;
+}
+.toggle-btn.active {
+  background: rgba(79, 195, 247, 0.1);
+  border-color: var(--interviewer-accent); color: var(--text-primary);
+}
+.continue-banner {
+  background: linear-gradient(135deg, rgba(79,195,247,0.1), rgba(129,201,149,0.1));
+  border: 1px solid rgba(79,195,247,0.3); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.continue-banner .banner-icon { font-size: 24px; }
+.continue-banner .banner-text { flex: 1; }
+.continue-banner .banner-title { font-size: 14px; font-weight: 600; }
+.continue-banner .banner-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.continue-banner .banner-btn {
+  background: var(--interviewer-accent); color: #000;
+  border: none; border-radius: 8px; padding: 8px 14px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  white-space: nowrap;
+}
+#btn-start-study {
+  width: 100%; padding: 18px; font-size: 20px;
+  background: linear-gradient(135deg, var(--easy), #4cae4c);
+  border: none; border-radius: 14px; color: #fff;
+  font-weight: 700; cursor: pointer; margin-top: 8px;
+  transition: transform 0.15s, opacity 0.15s;
+}
+#btn-start-study:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* ─── SCREEN 2: STUDY ─── */
+#screen-study { padding: 0; display: flex; flex-direction: column; min-height: calc(100vh - 56px); }
+#progress-bar-container {
+  height: 4px; background: var(--border); position: sticky; top: 56px; z-index: 50;
+}
+#progress-bar { height: 100%; background: var(--interviewer-accent); transition: width 0.4s ease; width: 0%; }
+#study-stats {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px; padding: 10px 16px;
+  font-size: 13px; color: var(--text-secondary);
+  background: var(--nav-bg); border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+#study-stats span { white-space: nowrap; }
+#study-stats .stat-done { color: var(--easy); }
+#study-stats .stat-again { color: var(--again); }
+#card-area {
+  flex: 1; display: flex; align-items: flex-start;
+  justify-content: center;
+  padding: 16px 16px 120px;
+  overflow-y: auto;
+}
+.card-scene {
+  width: 100%; max-width: 600px;
+  perspective: 1200px;
+}
+.card-inner {
+  position: relative; width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+.card-inner.flipped { transform: rotateY(180deg); }
+.card-face {
+  width: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border-radius: 20px; overflow: hidden;
+}
+.card-front {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 28px 24px;
+  display: flex; flex-direction: column;
+  align-items: center; text-align: center;
+  min-height: 260px; justify-content: center;
+}
+.card-back {
+  position: absolute; top: 0; left: 0; right: 0;
+  transform: rotateY(180deg);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+}
+/* Dynamic height: front sets height, back is absolute */
+.card-scene.show-back .card-inner { /* dealt with by flipped class */ }
+
+.card-pills {
+  display: flex; gap: 8px; margin-bottom: 16px;
+  flex-wrap: wrap; justify-content: center;
+}
+.pill {
+  font-size: 11px; font-weight: 600; padding: 3px 10px;
+  border-radius: 20px; white-space: nowrap;
+}
+.pill-cat { background: rgba(79,195,247,0.15); color: var(--interviewer-accent); }
+.pill-must { background: rgba(255,215,0,0.15); color: var(--must-know); border: 1px solid rgba(255,215,0,0.3); }
+.pill-very { background: rgba(144,238,144,0.15); color: var(--very-important); border: 1px solid rgba(144,238,144,0.3); }
+.pill-imp { background: rgba(255,165,0,0.15); color: var(--important); border: 1px solid rgba(255,165,0,0.3); }
+.pill-pos { background: rgba(255,255,255,0.07); color: var(--text-muted); }
+
+.jp-word {
+  font-family: var(--font-jp);
+  font-size: 36px; font-weight: 700;
+  line-height: 1.3; margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.romaji-text { font-size: 18px; color: var(--text-secondary); margin-bottom: 6px; }
+.flip-hint { font-size: 12px; color: var(--text-muted); margin-top: 20px; }
+
+/* BACK sections */
+.back-section {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.back-section:last-child { border-bottom: none; }
+.section-meaning { background: var(--card-bg); }
+.section-interviewer {
+  background: var(--interviewer-bg);
+  border-left: 4px solid var(--interviewer-accent);
+}
+.section-answer {
+  background: var(--answer-bg);
+  border-left: 4px solid var(--answer-accent);
+}
+.section-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 10px;
+  opacity: 0.7;
+}
+.meaning-native {
+  font-family: var(--font-jp); font-size: 24px; font-weight: 700;
+  color: var(--interviewer-accent); margin-bottom: 8px;
+}
+.meaning-en { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; }
+.memory-hook { font-size: 13px; font-style: italic; color: var(--must-know); margin-bottom: 8px; }
+.contraction-watch {
+  font-size: 13px; color: var(--important);
+  background: rgba(255,165,0,0.08); padding: 6px 10px;
+  border-radius: 8px; margin-bottom: 8px;
+}
+.related-words { font-size: 13px; color: var(--text-muted); }
+.sentence-jp {
+  font-family: var(--font-jp); font-size: 20px;
+  line-height: 1.6; color: var(--text-primary); margin-bottom: 6px;
+}
+.sentence-ro { font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; line-height: 1.5; }
+.sentence-en { font-size: 13px; line-height: 1.5; }
+.sentence-en-interviewer { color: #90CAF9; }
+.sentence-en-answer { color: #A5D6A7; }
+
+.filler-warning {
+  background: rgba(207, 102, 121, 0.15);
+  border: 1px solid rgba(207,102,121,0.4);
+  border-radius: 10px; padding: 10px 14px;
+  font-size: 13px; font-weight: 600; color: #CF6679;
+  margin: 0 20px 16px; text-align: center;
+}
+
+/* ─── RATING BUTTONS ─── */
+#rating-area {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--nav-bg);
+  border-top: 1px solid var(--border);
+  padding: 10px 16px 12px;
+  display: none; z-index: 50;
+}
+#rating-area.visible { display: flex; gap: 8px; }
+.rating-btn {
+  flex: 1; min-height: 64px; border: none; border-radius: 12px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; line-height: 1.2;
+}
+.rating-btn span.key-hint { font-size: 10px; opacity: 0.7; font-weight: 400; }
+.rating-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+.rating-btn:active { transform: translateY(0); }
+#btn-again { background: var(--again); color: #fff; }
+#btn-hard { background: var(--hard); color: #fff; }
+#btn-easy { background: var(--easy); color: #fff; }
+
+/* ─── SCREEN 3: COMPLETE ─── */
+#screen-complete { max-width: 560px; margin: 0 auto; text-align: center; padding: 40px 24px; }
+.complete-emoji { font-size: 64px; margin-bottom: 16px; }
+.complete-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+.complete-subtitle { color: var(--text-secondary); font-size: 16px; margin-bottom: 32px; }
+.complete-stats {
+  background: var(--card-bg); border-radius: 16px;
+  padding: 24px; margin-bottom: 24px;
+  border: 1px solid var(--border);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.stat-box { text-align: center; }
+.stat-box .val { font-size: 32px; font-weight: 700; }
+.stat-box .lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.bar-chart { margin: 24px 0; }
+.bar-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 10px;
+}
+.bar-lbl { font-size: 13px; width: 100px; text-align: right; flex-shrink: 0; }
+.bar-track { flex: 1; height: 24px; background: var(--border); border-radius: 12px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 12px; transition: width 0.8s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 12px; font-weight: 700; color: #fff; }
+.complete-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.complete-actions button { flex: 1; min-width: 140px; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); transition: all 0.2s; }
+.complete-actions .btn-again-study { background: var(--card-bg); color: var(--text-primary); }
+.complete-actions .btn-browse { background: var(--interviewer-accent); color: #000; border-color: var(--interviewer-accent); }
+
+/* ─── BROWSE ─── */
+#screen-browse { padding: 16px; }
+.browse-filters {
+  position: sticky; top: 56px; z-index: 40;
+  background: var(--bg); padding: 12px 0 8px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border); margin-bottom: 12px;
+}
+.browse-filters input, .browse-filters select {
+  background: var(--card-bg); border: 1px solid var(--border);
+  color: var(--text-primary); border-radius: 10px;
+  padding: 8px 12px; font-size: 14px;
+}
+.browse-filters input { flex: 1; min-width: 180px; }
+.browse-filters select { cursor: pointer; }
+#browse-search::placeholder { color: var(--text-muted); }
+.browse-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.browse-table thead th {
+  text-align: left; padding: 10px 12px;
+  background: var(--card-bg); color: var(--text-muted);
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 140px;
+}
+.browse-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.15s;
+}
+.browse-table tbody tr:hover { background: rgba(79,195,247,0.04); }
+.browse-table tbody tr.expanded { background: rgba(79,195,247,0.07); }
+.browse-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.015); }
+.browse-table tbody tr:nth-child(even):hover { background: rgba(79,195,247,0.04); }
+.browse-table td { padding: 12px 12px; vertical-align: middle; }
+.browse-table td.jp-cell { font-family: var(--font-jp); font-size: 16px; font-weight: 600; }
+.browse-table td.fast-cell { font-family: var(--font-jp); color: var(--interviewer-accent); font-size: 13px; }
+.expand-row td {
+  padding: 0 !important;
+  background: rgba(15,17,23,0.9) !important;
+  cursor: default;
+}
+.expand-content {
+  padding: 16px 20px;
+}
+.expand-sections { display: flex; flex-direction: column; gap: 0; overflow: hidden; border-radius: 12px; }
+
+/* ─── SETTINGS MODAL ─── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card-bg); border-radius: 20px;
+  padding: 28px; max-width: 380px; width: 90%;
+  border: 1px solid var(--border);
+}
+.modal h2 { font-size: 18px; margin-bottom: 20px; }
+.modal-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.modal-row:last-child { border-bottom: none; }
+.modal-row label { font-size: 14px; }
+.switch {
+  position: relative; width: 44px; height: 24px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; inset: 0; background: var(--border);
+  border-radius: 24px; cursor: pointer; transition: 0.2s;
+}
+.slider::before {
+  content: ''; position: absolute;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: white; bottom: 3px; left: 3px; transition: 0.2s;
+}
+input:checked + .slider { background: var(--interviewer-accent); }
+input:checked + .slider::before { transform: translateX(20px); }
+.modal-close {
+  background: var(--border); border: none; border-radius: 10px;
+  color: var(--text-primary); padding: 10px 20px;
+  cursor: pointer; font-size: 14px; margin-top: 16px; width: 100%;
+}
+
+/* ─── RELOAD MODAL ─── */
+#reload-modal .modal { max-width: 440px; }
+.file-drop-area {
+  border: 2px dashed var(--border); border-radius: 12px;
+  padding: 32px 20px; text-align: center; cursor: pointer;
+  transition: border-color 0.2s;
+}
+.file-drop-area:hover, .file-drop-area.drag-over { border-color: var(--interviewer-accent); }
+.file-drop-area p { color: var(--text-secondary); font-size: 14px; margin-top: 8px; }
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card-scene { animation: fadeSlideUp 0.3s ease; }
+
+/* ─── KEYBOARD HINT ─── */
+.keyboard-hints {
+  text-align: center; color: var(--text-muted); font-size: 12px;
+  padding: 8px 0 0;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 480px) {
+  .jp-word { font-size: 28px; }
+  #study-stats { font-size: 12px; gap: 10px; }
+  .browse-table thead th:nth-child(4),
+  .browse-table tbody td:nth-child(4) { display: none; }
+  .browse-table thead th:nth-child(6),
+  .browse-table tbody td:nth-child(6) { display: none; }
+}
+
+.contraction-front-hint {
+  font-size: 13px; color: var(--text-muted); margin-top: 8px; font-style: italic;
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-brand">日本語面接</div>
+  <div class="nav-modes">
+    <button class="nav-btn active" onclick="goStudyMode()" id="nav-study">📚 Study</button>
+    <button class="nav-btn" onclick="goBrowseMode()" id="nav-browse">📖 Browse</button>
+  </div>
+  <button class="nav-settings" onclick="openSettings()" title="Settings">⚙️</button>
+</nav>
+
+<div id="app">
+
+<!-- SCREEN 0: WELCOME -->
+<section id="screen-welcome" class="screen active">
+  <div class="welcome-logo">日本語面接</div>
+  <div class="welcome-subtitle">Japanese Interview Vocabulary Flashcards</div>
+  <div class="welcome-stats">
+    <div class="stats-count" id="welcome-count">137</div>
+    <div class="stats-label">cards loaded and ready</div>
+  </div>
+  <div class="welcome-actions">
+    <button class="btn-primary" onclick="showSetup()">📚 Start Study Session</button>
+    <button class="btn-secondary" onclick="goBrowseMode()">📖 Browse All Vocabulary</button>
+    <button class="btn-secondary" onclick="openReloadModal()">📂 Reload with Updated Excel</button>
+  </div>
+  <div class="upload-zone" id="welcome-upload-zone" ondragover="handleDragOver(event)" ondrop="handleFileDrop(event)">
+    <p>📁 Drag & drop an Excel file here to reload data</p>
+    <p style="margin-top:6px"><label for="file-input-welcome" style="color:var(--interviewer-accent);cursor:pointer;">or click to browse</label></p>
+    <input type="file" id="file-input-welcome" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+  </div>
+</section>
+
+<!-- SCREEN 1: SETUP -->
+<section id="screen-setup" class="screen">
+  <div class="setup-title">Study Setup</div>
+
+  <div id="continue-banner" class="continue-banner" style="display:none">
+    <div class="banner-icon">🔖</div>
+    <div class="banner-text">
+      <div class="banner-title">Continue last session?</div>
+      <div class="banner-sub" id="continue-banner-sub"></div>
+    </div>
+    <button class="banner-btn" onclick="continueSession()">Continue →</button>
+  </div>
+
+  <div class="setup-section">
+    <h3>Deck</h3>
+    <div class="radio-group" id="deck-radio-group">
+      <label class="radio-option checked" data-val="MUST KNOW">
+        <input type="radio" name="deck" value="MUST KNOW" checked>
+        <div class="radio-dot"></div>
+        <div class="radio-label">⭐ MUST KNOW only</div>
+        <div class="radio-count" id="count-must">0</div>
+      </label>
+      <label class="radio-option" data-val="VERY IMPORTANT">
+        <input type="radio" name="deck" value="VERY IMPORTANT">
+        <div class="radio-dot"></div>
+        <div class="radio-label">✅ VERY IMPORTANT only</div>
+        <div class="radio-count" id="count-very">0</div>
+      </label>
+      <label class="radio-option" data-val="ALL">
+        <input type="radio" name="deck" value="ALL">
+        <div class="radio-dot"></div>
+        <div class="radio-label">📚 ALL cards</div>
+        <div class="radio-count" id="count-all">0</div>
+      </label>
+      <label class="radio-option" data-val="CATEGORY">
+        <input type="radio" name="deck" value="CATEGORY">
+        <div class="radio-dot"></div>
+        <div class="radio-label">🗂️ By Category</div>
+        <div class="radio-count" id="count-cat">—</div>
+      </label>
+    </div>
+    <select class="category-dropdown" id="category-dropdown">
+      <option value="">-- Select Category --</option>
+    </select>
+  </div>
+
+  <div class="setup-section">
+    <h3>Study Order</h3>
+    <div class="toggle-group">
+      <button class="toggle-btn active" id="order-priority" onclick="setOrder('priority')">📊 Priority Order</button>
+      <button class="toggle-btn" id="order-random" onclick="setOrder('random')">🔀 Random</button>
+    </div>
+  </div>
+
+  <div class="setup-section">
+    <h3>Romaji on Front</h3>
+    <div class="toggle-group">
+      <button class="toggle-btn" id="romaji-yes" onclick="setRomaji(true)">✅ Show Romaji</button>
+      <button class="toggle-btn active" id="romaji-no" onclick="setRomaji(false)">🚫 Hide Romaji (default)</button>
+    </div>
+  </div>
+
+  <button id="btn-start-study" onclick="startStudy()">▶ Start Studying</button>
+  <div class="keyboard-hints" style="margin-top:12px">Keyboard: SPACE=flip · 1=Again · 2=Hard · 3=Easy · ←=Back</div>
+</section>
+
+<!-- SCREEN 2: STUDY -->
+<section id="screen-study" class="screen">
+  <div id="progress-bar-container">
+    <div id="progress-bar"></div>
+  </div>
+  <div id="study-stats">
+    <span id="stat-pos">Card 0 of 0</span>
+    <span>|</span>
+    <span class="stat-done" id="stat-done">✅ Done: 0</span>
+    <span>|</span>
+    <span class="stat-again" id="stat-again">🔁 Again: 0</span>
+  </div>
+  <div id="card-area">
+    <div class="card-scene" id="card-scene">
+      <div class="card-inner" id="card-inner" onclick="flipCard()">
+        <div class="card-face card-front" id="card-front">
+          <!-- populated by JS -->
+        </div>
+        <div class="card-face card-back" id="card-back">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+    <div class="keyboard-hints" id="study-keyboard-hints" style="margin-top:12px">SPACE to flip</div>
+  </div>
+</section>
+
+<!-- RATING BUTTONS -->
+<div id="rating-area">
+  <button class="rating-btn" id="btn-again" onclick="rateCard(1)">
+    ❌ Again
+    <span class="key-hint">press 1</span>
+  </button>
+  <button class="rating-btn" id="btn-hard" onclick="rateCard(2)">
+    😐 Hard
+    <span class="key-hint">press 2</span>
+  </button>
+  <button class="rating-btn" id="btn-easy" onclick="rateCard(3)">
+    ✅ Easy
+    <span class="key-hint">press 3</span>
+  </button>
+</div>
+
+<!-- SCREEN 3: COMPLETE -->
+<section id="screen-complete" class="screen">
+  <div class="complete-emoji">🎉</div>
+  <div class="complete-title">Session Complete!</div>
+  <div class="complete-subtitle" id="complete-sub">Great work studying Japanese interview vocabulary!</div>
+  <div class="complete-stats">
+    <div class="stat-box">
+      <div class="val" id="cs-total">0</div><div class="lbl">Total Cards</div>
+    </div>
+    <div class="stat-box">
+      <div class="val" id="cs-time" style="color:var(--interviewer-accent)">0:00</div><div class="lbl">Time Taken</div>
+    </div>
+    <div class="stat-box">
+      <div class="val" id="cs-easy" style="color:var(--easy)">0</div><div class="lbl">Easy ✅</div>
+    </div>
+    <div class="stat-box">
+      <div class="val" id="cs-again" style="color:var(--again)">0</div><div class="lbl">Again ❌</div>
+    </div>
+  </div>
+  <div class="bar-chart" id="complete-bars"></div>
+  <div class="complete-actions">
+    <button class="btn-again-study" onclick="showSetup()">🔁 Study Again</button>
+    <button class="btn-browse" onclick="goBrowseMode()">📖 Browse Vocabulary</button>
+  </div>
+</section>
+
+<!-- BROWSE -->
+<section id="screen-browse" class="screen">
+  <div class="browse-filters">
+    <input type="text" id="browse-search" placeholder="🔍 Search Japanese, Romaji, English..." oninput="filterBrowse()">
+    <select id="browse-priority" onchange="filterBrowse()">
+      <option value="">All Priorities</option>
+      <option value="MUST KNOW">⭐ MUST KNOW</option>
+      <option value="VERY IMPORTANT">✅ VERY IMPORTANT</option>
+      <option value="IMPORTANT">🔶 IMPORTANT</option>
+    </select>
+    <select id="browse-category" onchange="filterBrowse()">
+      <option value="">All Categories</option>
+    </select>
+    <select id="browse-jlpt" onchange="filterBrowse()">
+      <option value="">All JLPT</option>
+      <option value="N5">N5</option>
+      <option value="N4">N4</option>
+      <option value="N3">N3</option>
+      <option value="N2">N2</option>
+    </select>
+  </div>
+  <table class="browse-table" id="browse-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Japanese</th>
+        <th>Romaji</th>
+        <th>Fast Speech</th>
+        <th>English</th>
+        <th>Priority</th>
+        <th>Category</th>
+      </tr>
+    </thead>
+    <tbody id="browse-tbody"></tbody>
+  </table>
+  <div id="browse-empty" style="text-align:center;padding:40px;color:var(--text-muted);display:none">No cards match your filters.</div>
+</section>
+
+</div><!-- #app -->
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <h2>⚙️ Settings</h2>
+    <div class="modal-row">
+      <label>Show Romaji on Front</label>
+      <label class="switch">
+        <input type="checkbox" id="setting-romaji" onchange="toggleRomajiSetting()">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="modal-row">
+      <label>Dark Theme</label>
+      <label class="switch">
+        <input type="checkbox" checked disabled>
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="modal-row" style="border-bottom:none">
+      <label style="color:var(--text-muted);font-size:12px">Version 1.0 · 137 cards</label>
+    </div>
+    <button class="modal-close" onclick="closeSettings()">Close</button>
+  </div>
+</div>
+
+<!-- RELOAD MODAL -->
+<div class="modal-overlay" id="reload-modal" onclick="if(event.target===this)closeReloadModal()">
+  <div class="modal">
+    <h2>📂 Reload with Updated Excel</h2>
+    <p style="color:var(--text-secondary);font-size:14px;margin-bottom:16px">Upload an updated Excel file to replace the embedded vocabulary data. The file should have the same column structure.</p>
+    <div class="file-drop-area" id="reload-drop" ondragover="handleDragOver(event)" ondrop="handleFileDrop(event)">
+      <div style="font-size:36px">📊</div>
+      <p>Drag & drop Excel file here</p>
+      <p style="margin-top:6px"><label for="file-input-reload" style="color:var(--interviewer-accent);cursor:pointer;">or click to browse</label></p>
+      <input type="file" id="file-input-reload" accept=".xlsx,.xls" onchange="handleFileSelect(event)" style="display:none">
+    </div>
+    <div id="reload-status" style="margin-top:12px;font-size:13px;color:var(--text-secondary)"></div>
+    <button class="modal-close" onclick="closeReloadModal()">Close</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// EMBEDDED VOCAB DATA
+// ═══════════════════════════════════════════════════════════
+const VOCAB_DATA = [{"r":1,"j":"なぜ","ro":"naze","fs":"なぜ→なんで(casual)","en":"Why","pos":"Question Word","jlpt":"N4","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"WHY/MOTIVATION","ij":"なぜ弊社に応募されたんですか？","iro":"Naze heisha ni oubo sareta n desu ka?","ien":"Why did you apply to our company?","aj":"AIと開発の経験を活かして貢献できると思ったからです。","aro":"AI to kaihatsu no keiken o ikashite kouken dekiru to omotta kara desu.","aen":"Because I thought I could contribute using my AI and development experience.","cw":"なぜ→なんで in casual; なんで in fast speech sounds like 'nande'","rw":"どうして・理由・動機","mh":"WHY = naze. Think: 'na-ze' = 'natural zero' reason needed"},{"r":2,"j":"どのように","ro":"dono youni","fs":"どーやって / どのよーに","en":"How / In what way","pos":"Question Word","jlpt":"N3","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"HOW/PROCESS","ij":"どのようにして精度を改善しましたか？","iro":"Dono you ni shite seido o kaizen shimashita ka?","ien":"How did you improve the accuracy?","aj":"センサデータのノイズ処理を改善し、モデルパラメータを調整することで精度を3%向上させました。","aro":"Sensa deeta no noizu shori o kaizen shi, moderu parameta o chousei suru koto de seido o 3% koujou sasemashita.","aen":"By improving sensor data noise processing and adjusting model parameters, I improved accuracy by 3%.","cw":"どのように → どーやって at native speed; often just 'どう' alone","rw":"やり方・方法・プロセス","mh":"HOW = dono youni. Think: 'dono' like 'do-no wrong way'"},{"r":3,"j":"どんな","ro":"donna","fs":"どんな(same but faster)","en":"What kind of","pos":"Question Word","jlpt":"N4","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"WHAT KIND","ij":"どんなプロジェクトに取り組みましたか？","iro":"Donna purojekuto ni torikumimashita ka?","ien":"What kind of project did you work on?","aj":"触覚センサを使った手話認識AIの研究プロジェクトに取り組みました。","aro":"Shokkaku sensa o tsukatta shuwa ninshiki AI no kenkyuu purojekuto ni torikumimashita.","aen":"I worked on a sign language recognition AI research project using tactile sensors.","cw":"どんな → sounds like 'donna' rapidly","rw":"どのような・いかなる","mh":"WHAT KIND = donna. Like English 'donna' (lady) describes something"},{"r":4,"j":"について","ro":"ni tsuite","fs":"について→につて(fast)","en":"About / Regarding","pos":"Particle Phrase","jlpt":"N4","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"TOPIC SIGNAL","ij":"研究についてもう少し詳しく教えていただけますか？","iro":"Kenkyuu ni tsuite mou sukoshi kuwashiku oshiete itadakemasu ka?","ien":"Could you tell me a bit more about your research?","aj":"はい、私の研究は触覚センサ付きデータグローブを使った手話認識AIです。","aro":"Hai, watashi no kenkyuu wa shokkaku sensa tsuki deetaguroobu o tsukatta shuwa ninshiki AI desu.","aen":"Yes, my research is sign language recognition AI using a data glove with tactile sensors.","cw":"について → につて or につい at speed","rw":"に関して・に関する","mh":"ABOUT = ni tsuite. 'ni' points TO the topic"},{"r":5,"j":"どうやって","ro":"dou yatte","fs":"どーやって / どってやって","en":"How did you / How do you","pos":"Question Word","jlpt":"N4","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"HOW/METHOD","ij":"課題をどうやって乗り越えましたか？","iro":"Kadai o dou yatte norikoremashita ka?","ien":"How did you overcome that challenge?","aj":"データを何度も確認し、試行錯誤を重ねることで問題を解決しました。","aro":"Deeta o nandomo kakunin shi, shikou sakugo o kasaneru koto de mondai o kaiketsu shimashita.","aen":"I solved the problem by checking the data repeatedly and going through trial and error.","cw":"どうやって → どーやって, the middle often drops","rw":"どのように・方法・やり方","mh":"HOW (doing) = dou yatte. 'dou' = how, 'yatte' = doing"},{"r":6,"j":"いつ","ro":"itsu","fs":"いつ(same)","en":"When","pos":"Question Word","jlpt":"N5","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"TIMELINE","ij":"いつから日本語を勉強していますか？","iro":"Itsu kara nihongo o benkyou shite imasu ka?","ien":"Since when have you been studying Japanese?","aj":"高校生の時から日本語に興味を持ち、大学入学後から本格的に勉強し始めました。","aro":"Koukousei no toki kara nihongo ni kyoumi o mochi, daigaku nyuugaku go kara honkakuteki ni benkyou shi hajimemashita.","aen":"I became interested in Japanese in high school and started studying seriously after entering university.","cw":"いつから = since when; いつまで = until when","rw":"時期・期間・タイミング","mh":"WHEN = itsu. Short, sharp sound"},{"r":7,"j":"どのくらい","ro":"dono kurai","fs":"どのくらい→どんくらい","en":"How much / How long","pos":"Question Word","jlpt":"N4","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"QUANTITY/DURATION","ij":"研究はどのくらいの期間取り組んでいますか？","iro":"Kenkyuu wa dono kurai no kikan torikunde imasu ka?","ien":"How long have you been working on your research?","aj":"2025年4月から取り組んでおり、約1年以上になります。","aro":"2025 nen shigatsu kara torikunde ori, yaku ichi nen ijou ni narimasu.","aen":"I have been working on it since April 2025, so it has been over a year.","cw":"どのくらい → どんくらい at native speed","rw":"どれほど・どれだけ・程度","mh":"HOW MUCH = dono kurai. 'kurai' means 'about/approximately'"},{"r":8,"j":"たことがありますか","ro":"ta koto ga arimasu ka","fs":"たことありますか→たことある？","en":"Have you ever done ~?","pos":"Grammar Pattern","jlpt":"N4","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"PAST EXPERIENCE","ij":"海外の企業でインターンをしたことがありますか？","iro":"Kaigai no kigyou de intaan o shita koto ga arimasu ka?","ien":"Have you ever interned at a foreign company?","aj":"はい、インドではHPEとL&Tで、日本では楽天でインターンの経験があります。","aro":"Hai, Indo de wa HPE to L&T de, Nihon de wa Rakuten de intaan no keiken ga arimasu.","aen":"Yes, I have intern experience at HPE and L&T in India, and at Rakuten in Japan.","cw":"たことがありますか → たことある？ at speed","rw":"経験・体験・したことがある","mh":"HAVE YOU EVER = ta koto ga arimasu ka. The 'koto' is the 'thing' you did"},{"r":9,"j":"と思いますか","ro":"to omoimasu ka","fs":"とおもいますか→っておもいますか","en":"What do you think about ~?","pos":"Grammar Pattern","jlpt":"N4","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"OPINION","ij":"AIの将来についてどう思いますか？","iro":"AI no shourai ni tsuite dou omoimasu ka?","ien":"What do you think about the future of AI?","aj":"AIは社会に大きなインパクトをもたらすと思います。特に医療や教育の分野で活躍すると考えています。","aro":"AI wa shakai ni ookina inpakuto o motarasu to omoimasu. Toku ni iryou ya kyouiku no bun'ya de katsuyaku suru to kangaete imasu.","aen":"I think AI will have a major impact on society. I believe it will be especially active in medical and educational fields.","cw":"と思いますか → っておもいますか or just どう思う？","rw":"意見・考え・見解","mh":"WHAT DO YOU THINK = to omoimasu ka"},{"r":10,"j":"教えてください","ro":"oshiete kudasai","fs":"おしえてください→おしえてくれますか","en":"Please tell me","pos":"Polite Request","jlpt":"N4","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"EXPLANATION REQUEST","ij":"志望動機を教えてください。","iro":"Shibou douki o oshiete kudasai.","ien":"Please tell me your reason for applying.","aj":"AI技術と開発経験を活かして、社会に役立つシステムを作りたいと思い、応募しました。","aro":"AI gijutsu to kaihatsu keiken o ikashite, shakai ni yakudatsu shisutemu o tsukuritai to omoi, oubo shimashita.","aen":"I applied because I want to use my AI technology and development experience to build systems that are useful to society.","cw":"教えてください → おしえてくれますか or おしえて in very casual","rw":"説明してください・聞かせてください","mh":"PLEASE TELL = oshiete kudasai"},{"r":11,"j":"聞かせてください","ro":"kikasete kudasai","fs":"きかせてくれますか","en":"Please let me hear / Tell me","pos":"Polite Request","jlpt":"N3","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"EXPLANATION REQUEST","ij":"インターンでの経験を聞かせてください。","iro":"Intaan de no keiken o kikasete kudasai.","ien":"Please tell me about your internship experience.","aj":"楽天インターンでは、楽天モバイルのAPIを検証する業務を担当しました。チームで連携しながら品質確保に貢献しました。","aro":"Rakuten intaan de wa, Rakuten Mobairu no API o kenshou suru gyoumu o tantou shimashita. Chiimu de renkei shinagara hinshitsu kakuho ni kouken shimashita.","aen":"In the Rakuten internship, I was in charge of verifying APIs for Rakuten Mobile. I contributed to quality assurance while collaborating with the team.","cw":"聞かせてください → きかせてくれますか in casual","rw":"教えてください・話してください","mh":"TELL ME = kikasete kudasai. 'kiku' = to hear/listen"},{"r":12,"j":"お願いします","ro":"onegaishimasu","fs":"おねがいします→よろしくっす","en":"Please / I request","pos":"Polite Expression","jlpt":"N5","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"GENERAL REQUEST","ij":"では、自己紹介をお願いします。","iro":"De wa, jikoshoukai o onegaishimasu.","ien":"Now then, please introduce yourself.","aj":"はい、よろしくお願いいたします。レシュマ・ラメシュと申します。","aro":"Hai, yoroshiku onegai itashimasu. Reshuma Rameshu to moushimasu.","aen":"Yes, thank you. My name is Reshma Ramesh.","cw":"お願いします → よろしくっす at very casual speed","rw":"頼む・依頼・お頼み申し上げます","mh":"PLEASE = onegaishimasu. 'ne-gai' = wish/request"},{"r":13,"j":"という","ro":"to iu","fs":"っていう / って","en":"Called / Which is / That is","pos":"Grammar Pattern","jlpt":"N4","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"EXPLANATION/DEFINITION","ij":"Transformerというモデルを使った理由は何ですか？","iro":"Transformer to iu moderu o tsukatta riyuu wa nan desu ka?","ien":"What is the reason you used the model called Transformer?","aj":"Transformerは時系列データの特徴を効率よく学習できるため、手話認識に適していると判断しました。","aro":"Transformer wa jikeiretsu deeta no tokuchou o kouritsu yoku gakushuu dekiru tame, shuwa ninshiki ni tekishite iru to handan shimashita.","aen":"Because Transformer can efficiently learn features of time-series data, I judged it was suitable for sign language recognition.","cw":"という → って in casual; sounds like just 'tte'","rw":"いわゆる・つまり・言う","mh":"CALLED/THAT IS = to iu. 'to iu' frames the noun"},{"r":14,"j":"どれほど","ro":"dore hodo","fs":"どれほど→どんだけ(casual)","en":"How much / To what extent","pos":"Question Word","jlpt":"N3","pl":"VERY IMPORTANT","cat":"A. Question Triggers","qt":"EXTENT/DEGREE","ij":"その課題はどれほど難しかったですか？","iro":"Sono kadai wa dore hodo muzukashikatta desu ka?","ien":"How difficult was that challenge?","aj":"ノイズ除去は非常に難しく、何度も試行錯誤を繰り返しました。最初は精度が低く、改善するまで3ヶ月ほどかかりました。","aro":"Noizu jokyo wa hijou ni muzukashiku, nandomo shikou sakugo o kurikaeshimashita. Saisho wa seido ga hikuku, kaizen suru made san kagetsu hodo kakarimashita.","aen":"Noise removal was very difficult and I repeated trial and error many times. Accuracy was low at first and it took about 3 months to improve.","cw":"どれほど → どんだけ in very casual speech","rw":"どのくらい・どれだけ・程度","mh":"HOW MUCH (extent) = dore hodo"},{"r":15,"j":"に関して","ro":"ni kanshite","fs":"にかんして→にかんし","en":"Regarding / About","pos":"Particle Phrase","jlpt":"N3","pl":"VERY IMPORTANT","cat":"A. Question Triggers","qt":"TOPIC SIGNAL","ij":"Pythonに関してどのようなプロジェクトをされましたか？","iro":"Python ni kanshite dono you na purojekuto o saremashita ka?","ien":"What kind of projects did you do regarding Python?","aj":"Pythonを使って機械学習モデルの開発とデータ分析を行いました。特にPyTorchを使ったTransformerモデルの実装が主な経験です。","aro":"Python o tsukatte kikai gakushuu moderu no kaihatsu to deeta bunseki o okonaimashita. Toku ni PyTorch o tsukatta Transformer moderu no jissou ga omo na keiken desu.","aen":"I did machine learning model development and data analysis using Python. In particular, implementing a Transformer model using PyTorch is my main experience.","cw":"に関して → にかんし or にかんして at speed","rw":"について・に関する","mh":"REGARDING = ni kanshite"},{"r":16,"j":"どちら","ro":"dochira","fs":"どちら→どっち(casual)","en":"Which / Where (polite)","pos":"Question Word","jlpt":"N4","pl":"VERY IMPORTANT","cat":"A. Question Triggers","qt":"CHOICE/DIRECTION","ij":"フロントエンドとバックエンド、どちらに興味がありますか？","iro":"Furonto endo to bakku endo, dochira ni kyoumi ga arimasu ka?","ien":"Which are you interested in, frontend or backend?","aj":"どちらも経験がありますが、特にバックエンドとAIモデルの統合に興味があります。","aro":"Dochira mo keiken ga arimasu ga, toku ni bakku endo to AI moderu no tougou ni kyoumi ga arimasu.","aen":"I have experience in both, but I'm particularly interested in backend and AI model integration.","cw":"どちら → どっち in casual; very common question opener","rw":"どっち・いずれ・どれ","mh":"WHICH = dochira. Polite version of 'docchi'"},{"r":17,"j":"最後に","ro":"saigo ni","fs":"さいごに→さいごに(same)","en":"Finally / Lastly","pos":"Connector","jlpt":"N4","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"CLOSING SIGNAL","ij":"最後に何かご質問はありますか？","iro":"Saigo ni nanika go shitsumon wa arimasu ka?","ien":"Finally, do you have any questions?","aj":"はい、ぜひお聞きしたいことがあります。御社のエンジニア研修制度について教えていただけますか？","aro":"Hai, zehi okiki shitai koto ga arimasu. Onsha no enjinia kenshuu seido ni tsuite oshiete itadakemasu ka?","aen":"Yes, there is something I would like to ask. Could you tell me about your company's engineer training program?","cw":"最後に → さいごに same but often faster","rw":"終わりに・最終的に","mh":"FINALLY = saigo ni. 'saigo' = last/final"},{"r":18,"j":"ご質問","ro":"go shitsumon","fs":"ごしつもん→ごしつもん","en":"Your question (honorific)","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"A. Question Triggers","qt":"QUESTION SIGNAL","ij":"今日はご質問にお答えします。","iro":"Kyou wa go shitsumon ni okotae shimasu.","ien":"I will answer your questions today.","aj":"ありがとうございます。一点お聞きしてもよろしいでしょうか。","aro":"Arigatou gozaimasu. Itten okiki shite mo yoroshii deshou ka.","aen":"Thank you. Would it be alright if I asked one thing?","cw":"ご質問 = polite form of 質問","rw":"質問・お聞きする・伺う","mh":"HONORIFIC QUESTION = go shitsumon"},{"r":19,"j":"いかがでしょうか","ro":"ikaga deshou ka","fs":"いかがでしょうか→いかがですか","en":"How is it? / What do you think?","pos":"Polite Expression","jlpt":"N3","pl":"VERY IMPORTANT","cat":"A. Question Triggers","qt":"OPINION REQUEST","ij":"弊社についての印象はいかがでしょうか？","iro":"Heisha ni tsuite no inshou wa ikaga deshou ka?","ien":"What is your impression of our company?","aj":"とても魅力的な会社だと思います。特に技術への投資と社員の成長を大切にしている点に惹かれました。","aro":"Totemo miryokuteki na kaisha da to omoimasu. Toku ni gijutsu he no toushi to shain no seichou o taisetsu ni shite iru ten ni hikaremashita.","aen":"I think it is a very attractive company. I was especially drawn to the emphasis on investment in technology and employee growth.","cw":"いかがでしょうか → いかがですか more common","rw":"どうですか・どう思いますか","mh":"WHAT DO YOU THINK (polite) = ikaga deshou ka"},{"r":20,"j":"差し支えなければ","ro":"sashitsukaenakere ba","fs":"さしつかえなければ→よろしければ","en":"If you don't mind","pos":"Polite Expression","jlpt":"N2","pl":"VERY IMPORTANT","cat":"A. Question Triggers","qt":"SENSITIVE QUESTION SIGNAL","ij":"差し支えなければ、現在の日本語レベルを教えていただけますか？","iro":"Sashitsukaenakereba, genzai no nihongo reberu o oshiete itadakemasu ka?","ien":"If you don't mind, could you tell me your current Japanese level?","aj":"はい、JLPT N5を取得しており、現在の会話レベルはN3程度です。毎日勉強を続けています。","aro":"Hai, JLPT N5 o shutoku shite ori, genzai no kaiwa reberu wa N3 teido desu. Mainichi benkyou o tsuzukete imasu.","aen":"Yes, I have obtained JLPT N5, and my current conversation level is about N3. I continue studying every day.","cw":"差し支えなければ → よろしければ is simpler version used more often","rw":"よろしければ・もし良ければ","mh":"IF YOU DON'T MIND = sashitsukaenakereba. Signals a personal/sensitive question coming"},{"r":21,"j":"あのー","ro":"anoo","fs":"あのー→あーの→あの","en":"Um / Well (hesitation)","pos":"Filler","jlpt":"N4","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"IGNORE - filler","ij":"あのー、実はですね、この研究を始めたきっかけは...","iro":"Anoo, jitsu wa desu ne, kono kenkyuu o hajimeta kikkake wa...","ien":"Um, well actually, the reason I started this research was...","aj":"(This is a FILLER - ignore it and listen for the next content word)","aro":"(Filler - skip)","aen":"(This is a filler word - do not try to translate it)","cw":"あのー → あーの at native speed; often just a breathy pause","rw":"えっと・まあ・えー","mh":"IGNORE THIS - it's just a thinking pause like 'um'"},{"r":22,"j":"えっと","ro":"etto","fs":"えーと→えっと","en":"Uh / Let me see (thinking)","pos":"Filler","jlpt":"N4","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"IGNORE - filler","ij":"えっと、それについては...まあ、いくつか理由がありまして...","iro":"Etto, sore ni tsuite wa... maa, ikutsuka riyuu ga arimashite...","ien":"Uh, about that... well, there are several reasons...","aj":"(FILLER - the next word after this is what matters)","aro":"(Filler)","aen":"(Thinking filler - ignore it)","cw":"えっと → えーと; just a pause sound","rw":"あのー・まあ・うーん","mh":"IGNORE THIS - thinking sound like 'let me see'"},{"r":23,"j":"まあ","ro":"maa","fs":"まあ(same but faster)","en":"Well / I mean / Sort of","pos":"Filler","jlpt":"N4","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"SOFTENING SIGNAL","ij":"まあ、様々な経験をしてきたと思います。","iro":"Maa, samazama na keiken o shite kita to omoimasu.","ien":"Well, I think I've had various experiences.","aj":"(FILLER/SOFTENER - it softens what follows. Focus on the noun/verb after it)","aro":"(Softener filler)","aen":"(Softer 'I think/I suppose' nuance)","cw":"まあ → often stretched: まあー","rw":"まあまあ・そうですね・えっと","mh":"SOFTENER - when you hear まあ, prepare for a slightly uncertain statement"},{"r":24,"j":"ですね","ro":"desu ne","fs":"ですね→すね→っすね","en":"Right / Isn't it","pos":"Filler/Connector","jlpt":"N4","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"AGREEMENT SIGNAL","ij":"なかなか難しい経験でしたね。でもそこから学んだことも多いですね。","iro":"Nakanaka muzukashii keiken deshita ne. Demo soko kara manaida koto mo ooi desu ne.","ien":"That was quite a difficult experience, wasn't it. But you learned a lot from it too, right.","aj":"(Shows the speaker is checking understanding or showing empathy - just nod/agree)","aro":"(Seeking agreement)","aen":"(Like saying 'right?' in English)","cw":"ですね → っすね at casual speed; very common in Japanese speech","rw":"そうですね・なるほど・確かに","mh":"AGREEMENT CHECK - when you hear desune, nod and say そうですね"},{"r":25,"j":"んですけれども","ro":"n desu keredomo","fs":"んすけど→んすけ","en":"But / However (polite, soft)","pos":"Connector","jlpt":"N3","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"CONTRAST COMING","ij":"難しかったんですけれども、最終的には解決できました。","iro":"Muzukashikatta n desu keredomo, saishuteki ni wa kaiketsu dekimashita.","ien":"It was difficult, but in the end I was able to solve it.","aj":"(When you hear this, a contrast or continuation is coming after it)","aro":"(Soft contrast connector)","aen":"(Polite 'but' - something different follows)","cw":"んですけれども → んすけど → んすけ at fast speed","rw":"ですが・けれども・でも","mh":"CONTRAST SIGNAL - after this word, something different/opposite comes"},{"r":26,"j":"ということで","ro":"to iu koto de","fs":"っちゅーことで→っていうことで","en":"So therefore / With that in mind","pos":"Connector","jlpt":"N3","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"CONCLUSION SIGNAL","ij":"ということで、本日は面接の機会をいただきありがとうございます。","iro":"To iu koto de, honjitsu wa mensetsu no kikai o itadaki arigatou gozaimasu.","ien":"With that, thank you for giving me the opportunity for today's interview.","aj":"(CONCLUSION SIGNAL - when you hear this, a summary or conclusion is coming)","aro":"(Conclusion signal)","aen":"(So therefore/summary coming)","cw":"ということで → っちゅーことで at fast speech; often compressed heavily","rw":"それで・したがって・なので","mh":"CONCLUSION COMING - hear this and expect a wrap-up statement"},{"r":27,"j":"ちなみに","ro":"chinamini","fs":"ちなみに(same, slightly compressed)","en":"By the way / Incidentally","pos":"Connector","jlpt":"N3","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"SIDE NOTE SIGNAL","ij":"ちなみに、他の企業の選考状況はいかがですか？","iro":"Chinamini, hoka no kigyou no senkoku joukyou wa ikaga desu ka?","ien":"By the way, how is the selection process going at other companies?","aj":"ちなみに、現在は数社の選考に進んでいますが、御社が第一志望です。","aro":"Chinamini, genzai wa suusha no senko ni susunde imasu ga, onsha ga daiichi shibou desu.","aen":"By the way, I am currently in the selection process at several companies, but your company is my first choice.","cw":"ちなみに → ちなみ often","rw":"ところで・話は変わりますが・それと","mh":"BY THE WAY = chinamini. Side topic coming"},{"r":28,"j":"実は","ro":"jitsu wa","fs":"じつは→じつわ at speed","en":"Actually / To tell the truth","pos":"Connector","jlpt":"N4","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"IMPORTANT REVEAL SIGNAL","ij":"実は、私がAI研究を選んだのには特別な理由があります。","iro":"Jitsu wa, watashi ga AI kenkyuu o eranda no ni wa tokubetsu na riyuu ga arimasu.","ien":"Actually, there is a special reason why I chose AI research.","aj":"実は、大学でAIを学んだ時に、技術が人の生活を変える可能性を感じ、この分野に深く興味を持ちました。","aro":"Jitsu wa, daigaku de AI o manaita toki ni, gijutsu ga hito no seikatsu o kaeru kanousei o kanji, kono bun'ya ni fukaku kyoumi o mochimashita.","aen":"Actually, when I studied AI at university, I felt the potential for technology to change people's lives, and I became deeply interested in this field.","cw":"実は → じつわ at speed; signals something important coming","rw":"実際・実のところ・本当は","mh":"ACTUALLY = jitsu wa. Important information follows - pay attention"},{"r":29,"j":"たとえば","ro":"tatoeba","fs":"たとえば→たとえば(same)","en":"For example","pos":"Connector","jlpt":"N4","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"EXAMPLE SIGNAL","ij":"たとえば、どんな技術に一番興味がありますか？","iro":"Tatoeba, donna gijutsu ni ichiban kyoumi ga arimasu ka?","ien":"For example, which technology are you most interested in?","aj":"たとえば、コンピュータビジョンや自然言語処理など、AIの応用技術に特に興味があります。","aro":"Tatoeba, konpyuuta bijon ya shizen gengo shori nado, AI no ouyou gijutsu ni toku ni kyoumi ga arimasu.","aen":"For example, I am especially interested in applied AI technologies such as computer vision and natural language processing.","cw":"たとえば → たとえばー at speed; often sounds stretched","rw":"例えば・具体的には・例を挙げると","mh":"FOR EXAMPLE = tatoeba. An example follows"},{"r":30,"j":"また","ro":"mata","fs":"また(same but faster)","en":"Also / Furthermore / Again","pos":"Connector","jlpt":"N4","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"ADDITION SIGNAL","ij":"技術力だけでなく、また、コミュニケーション能力も重要です。","iro":"Gijutsu ryoku dake de naku, mata, komyunike-shon nouryoku mo juuyou desu.","ien":"Not only technical skills, but also communication skills are important.","aj":"また、楽天でのインターン経験を通じて、チームで働くことの重要性を学びました。","aro":"Mata, Rakuten de no intaan keiken o tsuujite, chiimu de hataraku koto no juuyousei o manabimashita.","aen":"Also, through my internship experience at Rakuten, I learned the importance of working in a team.","cw":"また → same word but said faster; very common in lists","rw":"さらに・それから・加えて","mh":"ALSO = mata. Adding more information"},{"r":31,"j":"さらに","ro":"sarani","fs":"さらに(same)","en":"Furthermore / Moreover","pos":"Connector","jlpt":"N3","pl":"VERY IMPORTANT","cat":"B. Fillers & Connectors","qt":"ADDITION SIGNAL","ij":"さらに、具体的なエピソードを教えていただけますか？","iro":"Sarani, gutaiteki na episoodo o oshiete itadakemasu ka?","ien":"Furthermore, could you tell me a specific episode?","aj":"さらに、会津大学のTA経験を通して、技術を分かりやすく説明する力も磨きました。","aro":"Sarani, Aizu daigaku no TA keiken o tooshite, gijutsu o wakariyasuku setsumei suru chikara mo migakimashita.","aen":"Furthermore, through my TA experience at the University of Aizu, I also sharpened my ability to explain technology clearly.","cw":"さらに → same but slightly shorter","rw":"また・加えて・それに加えて","mh":"FURTHERMORE = sarani. More important info coming"},{"r":32,"j":"ところで","ro":"tokoro de","fs":"ところで→ところで","en":"By the way / Changing topic","pos":"Connector","jlpt":"N3","pl":"VERY IMPORTANT","cat":"B. Fillers & Connectors","qt":"TOPIC CHANGE SIGNAL","ij":"ところで、弊社のどのサービスが一番気になりましたか？","iro":"Tokoro de, heisha no dono saabisu ga ichiban ki ni narimashita ka?","ien":"By the way, which of our company's services interested you the most?","aj":"御社のAIソリューション事業に一番興味を持ちました。私の研究経験が活かせると思いました。","aro":"Onsha no AI soryuushon jigyou ni ichiban kyoumi o mochimashita. Watashi no kenkyuu keiken ga ikaseru to omoimashita.","aen":"I was most interested in your company's AI solutions business. I thought I could apply my research experience.","cw":"ところで → topic shifts here; new question coming","rw":"話は変わりますが・ちなみに","mh":"TOPIC CHANGE = tokoro de. New subject incoming"},{"r":33,"j":"つまり","ro":"tsumari","fs":"つまり→つまり","en":"In other words / That is to say","pos":"Connector","jlpt":"N3","pl":"VERY IMPORTANT","cat":"B. Fillers & Connectors","qt":"CLARIFICATION SIGNAL","ij":"つまり、この研究でどんな社会貢献ができると思いますか？","iro":"Tsumari, kono kenkyuu de donna shakai kouken ga dekiru to omoimasu ka?","ien":"In other words, what kind of social contribution do you think this research can make?","aj":"つまり、聴覚障害者と健聴者の間のコミュニケーションを技術でサポートし、インクルーシブな社会を実現したいと思っています。","aro":"Tsumari, choukaku shousha to kenchousha no aida no komyunike-shon o gijutsu de sapooto shi, inkuruushiibu na shakai o jitsugen shitai to omotte imasu.","aen":"In other words, I want to support communication between hearing-impaired and hearing people through technology to realize an inclusive society.","cw":"つまり → same but faster; clarification follows","rw":"言い換えると・すなわち・要するに","mh":"IN OTHER WORDS = tsumari. Simplified explanation follows"},{"r":34,"j":"やっぱり","ro":"yappari","fs":"やっぱり→やっぱ","en":"After all / As expected / Indeed","pos":"Connector","jlpt":"N4","pl":"VERY IMPORTANT","cat":"B. Fillers & Connectors","qt":"CONFIRMATION SIGNAL","ij":"やっぱり、プログラミングは毎日練習することが大切ですね。","iro":"Yappari, puroguramingu wa mainichi renshuu suru koto ga taisetsu desu ne.","ien":"After all, practicing programming every day is important, isn't it.","aj":"やっぱり、実際にコードを書いて実装することが一番の学びになりました。","aro":"Yappari, jissai ni koodo o kaite jissou suru koto ga ichiban no manabi ni narimashita.","aen":"After all, actually writing code and implementing it became the greatest learning for me.","cw":"やっぱり → やっぱ at casual speed","rw":"確かに・やはり・なるほど","mh":"AS EXPECTED = yappari. Confirms something already understood"},{"r":35,"j":"なるほど","ro":"naruhodo","fs":"なるほど→なるほど","en":"I see / Indeed / That makes sense","pos":"Response","jlpt":"N4","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"UNDERSTANDING SIGNAL","ij":"なるほど、そういった背景があったんですね。","iro":"Naruhodo, sou itta haikei ga atta n desu ne.","ien":"I see, so there was such a background to it.","aj":"(When interviewer says this, they understood your answer - keep going or wait for next question)","aro":"(Interviewer's reaction word)","aen":"(Shows they understood - positive signal)","cw":"なるほど → なるほどね adds warmth","rw":"そうなんですね・分かりました・はい","mh":"I SEE = naruhodo. When you hear this, interviewer got your point"},{"r":36,"j":"そうですね","ro":"sou desu ne","fs":"そうですね→そうっすね","en":"That's right / Indeed","pos":"Response","jlpt":"N4","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"AGREEMENT SIGNAL","ij":"確かにそうですね。では、その点についてもう少し...","iro":"Tashika ni sou desu ne. De wa, sono ten ni tsuite mou sukoshi...","ien":"That's certainly true. Well then, about that point a little more...","aj":"(When interviewer says this, it's positive - they agree with you)","aro":"(Agreement response)","aen":"(Positive signal - they're agreeing)","cw":"そうですね → そうっすね very casual","rw":"なるほど・確かに・おっしゃる通り","mh":"THAT'S RIGHT = sou desu ne. Positive interviewer signal"},{"r":37,"j":"ちょっと","ro":"chotto","fs":"ちょっと→ちょと","en":"A little / Just / Slightly","pos":"Adverb","jlpt":"N5","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"SOFTENING SIGNAL","ij":"ちょっと難しい質問かもしれませんが...","iro":"Chotto muzukashii shitsumon kamo shimasen ga...","ien":"This may be a bit of a difficult question, but...","aj":"(When you hear ちょっと before a question, a softer or more nuanced question is coming)","aro":"(Softener before difficult question)","aen":"(Softens the following statement)","cw":"ちょっと → ちょと at speed; very common softener","rw":"少し・やや・若干","mh":"SOFTENER = chotto. Question will be more personal/delicate"},{"r":38,"j":"では","ro":"de wa","fs":"では→じゃあ→じゃ","en":"Well then / Now then","pos":"Transition","jlpt":"N4","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"TRANSITION SIGNAL","ij":"では、次の質問に移りましょう。","iro":"De wa, tsugi no shitsumon ni utsurimashou.","ien":"Well then, let us move to the next question.","aj":"(TRANSITION SIGNAL - next topic/question is coming after this)","aro":"(Topic change signal)","aen":"(Signals moving to next part of interview)","cw":"では → じゃあ → じゃ at increasingly casual speed","rw":"それでは・じゃあ・さて","mh":"NEXT TOPIC = de wa. New question or section coming"},{"r":39,"j":"おっしゃる通り","ro":"ossharu toori","fs":"おっしゃる通り→おっしゃるとおり","en":"As you say / Exactly right","pos":"Polite Expression","jlpt":"N2","pl":"VERY IMPORTANT","cat":"B. Fillers & Connectors","qt":"STRONG AGREEMENT SIGNAL","ij":"おっしゃる通り、チームワークは非常に重要ですね。","iro":"Ossharu toori, chiimuwaaku wa hijou ni juuyou desu ne.","ien":"As you say, teamwork is indeed very important.","aj":"(Interviewer is strongly agreeing with your point - excellent signal)","aro":"(Strong positive agreement)","aen":"(They fully agree with what you said)","cw":"おっしゃる通り → formal; casual version is その通り","rw":"確かに・まさに・その通り","mh":"EXACTLY RIGHT (polite) = ossharu toori. Very positive interviewer reaction"},{"r":40,"j":"まず","ro":"mazu","fs":"まず(same)","en":"First of all / To begin with","pos":"Connector","jlpt":"N4","pl":"MUST KNOW","cat":"B. Fillers & Connectors","qt":"LIST BEGINNING SIGNAL","ij":"まず、自己紹介から始めましょう。","iro":"Mazu, jikoshoukai kara hajimemashou.","ien":"First, let's start with a self-introduction.","aj":"まず、私の強みは3つあります。1つ目は...","aro":"Mazu, watashi no tsuyomi wa mittsu arimasu. Hitotsu me wa...","aen":"First, I have 3 strengths. The first is...","cw":"まず → same but clipped; signals first item in a list","rw":"最初に・第一に・はじめに","mh":"FIRST = mazu. List or sequence is starting"},{"r":41,"j":"自己紹介","ro":"jikoshoukai","fs":"じこしょうかい(same)","en":"Self-introduction","pos":"Noun","jlpt":"N4","pl":"MUST KNOW","cat":"C. Self-Intro & Basic","qt":"SELF-INTRO","ij":"まず、自己紹介をお願いいたします。","iro":"Mazu, jikoshoukai o onegai itashimasu.","ien":"First, please introduce yourself.","aj":"はじめまして。レシュマ・ラメシュと申します。インド出身で、現在会津大学大学院でコンピュータ理工学を研究しています。AIと触覚センサを使った手話認識の研究をしています。","aro":"Hajimemashite. Reshuma Rameshu to moushimasu. Indo shusshin de, genzai Aizu Daigaku Daigakuin de konpyuuta rikou gaku o kenkyuu shite imasu. AI to shokkaku sensa o tsukatta shuwa ninshiki no kenkyuu o shite imasu.","aen":"Nice to meet you. My name is Reshma Ramesh. I am from India, and currently researching computer science at the University of Aizu Graduate School. I am researching sign language recognition using AI and tactile sensors.","cw":"自己紹介 → first question in every interview without exception","rw":"自己PR・自己紹介文・プロフィール","mh":"SELF-INTRO = jikoshoukai. Always first question"},{"r":42,"j":"志望動機","ro":"shibou douki","fs":"しぼうどうき(same)","en":"Reason for applying / Motivation","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"C. Self-Intro & Basic","qt":"MOTIVATION","ij":"志望動機をお聞かせください。","iro":"Shibou douki o okiki kudasai.","ien":"Please tell me your reason for applying.","aj":"AIと開発の経験を活かして社会に貢献できる環境を探していました。御社の技術力と研修制度、そしてAI事業への取り組みに強く惹かれ、志望いたしました。","aro":"AI to kaihatsu no keiken o ikashite shakai ni kouken dekiru kankyou o sagashite imashita. Onsha no gijutsu ryoku to kenshuu seido, soshite AI jigyou he no torikumi ni tsuyoku hikarekure, shibou itashimashita.","aen":"I was looking for an environment where I could contribute to society using my AI and development experience. I was strongly attracted to your company's technical capabilities, training system, and approach to AI business.","cw":"志望動機 → usually asked as 志望理由 too; same meaning","rw":"志望理由・応募動機・応募理由","mh":"MOTIVATION TO APPLY = shibou douki. Always prepare this"},{"r":43,"j":"長所","ro":"chousho","fs":"ちょうしょ(same)","en":"Strength / Strong point","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"C. Self-Intro & Basic","qt":"STRENGTH","ij":"あなたの長所を教えてください。","iro":"Anata no chousho o oshiete kudasai.","ien":"Please tell me your strengths.","aj":"私の長所は、新しいスキルを素早く習得できる点と、課題に粘り強く取り組む姿勢です。研究でノイズ処理という困難な課題に直面した際も、諦めずに試行錯誤を重ねて精度を3%向上させました。","aro":"Watashi no chousho wa, atarashii sukiru o hayaku shuutoku dekiru ten to, kadai ni nebari zuyoku torikumu shisei desu. Kenkyuu de noizu shori to iu konnan na kadai ni chokumen shita sai mo, akiramezu ni shikou sakugo o kasanete seido o 3% koujou sasemashita.","aen":"My strength is my ability to quickly acquire new skills and my attitude of tenaciously tackling challenges. Even when I faced the difficult challenge of noise processing in my research, I did not give up and repeated trial and error to improve accuracy by 3%.","cw":"長所 = chousho; 強み = tsuyomi (more modern); both mean strength","rw":"強み・メリット・得意","mh":"STRENGTH = chousho. Same as 強み, more formal"},{"r":44,"j":"短所","ro":"tansho","fs":"たんしょ(same)","en":"Weakness / Short point","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"C. Self-Intro & Basic","qt":"WEAKNESS","ij":"あなたの短所は何ですか？","iro":"Anata no tansho wa nan desu ka?","ien":"What is your weakness?","aj":"私の短所は、完璧を求めすぎて時間がかかることがある点です。しかし、この弱点を改善するために、期限を設定して段階的に進める習慣をつけるよう努力しています。","aro":"Watashi no tansho wa, kanpeki o motomesugite jikan ga kakaru koto ga aru ten desu. Shikashi, kono jakuten o kaizen suru tame ni, kigen o settei shite dankai teki ni susumeru shukan o tsukeru you doryoku shite imasu.","aen":"My weakness is that I sometimes spend too much time seeking perfection. However, to improve this weakness, I am working on developing the habit of setting deadlines and progressing step by step.","cw":"短所 = tansho; 弱み = yowami (more modern)","rw":"弱み・デメリット・苦手","mh":"WEAKNESS = tansho. Always follow with how you're improving it"},{"r":45,"j":"強み","ro":"tsuyomi","fs":"つよみ(same)","en":"Strength (modern, common)","pos":"Noun","jlpt":"N4","pl":"MUST KNOW","cat":"C. Self-Intro & Basic","qt":"STRENGTH","ij":"あなたの強みは何ですか？","iro":"Anata no tsuyomi wa nan desu ka?","ien":"What is your strength?","aj":"私の強みは時間管理と継続的な学習です。研究とTA業務、アルバイトを並行しながら、GPA 3.86を維持しました。","aro":"Watashi no tsuyomi wa jikan kanri to keizokuteki na gakushuu desu. Kenkyuu to TA gyoumu, arubaito o heikou shinagara, GPA 3.86 o iji shimashita.","aen":"My strength is time management and continuous learning. I maintained a GPA of 3.86 while simultaneously conducting research, TA duties, and part-time work.","cw":"強み → common modern term; same as 長所 but more casual","rw":"長所・得意・メリット","mh":"MODERN STRENGTH = tsuyomi. More commonly heard in IT company interviews"},{"r":46,"j":"弱み","ro":"yowami","fs":"よわみ(same)","en":"Weakness (modern, common)","pos":"Noun","jlpt":"N4","pl":"MUST KNOW","cat":"C. Self-Intro & Basic","qt":"WEAKNESS","ij":"弱みがあれば教えてください。","iro":"Yowami ga areba oshiete kudasai.","ien":"Please tell me your weakness if you have one.","aj":"弱みは、時に慎重になりすぎて決断が遅くなることです。改善のために、決断の期限を明確に設定するよう意識しています。","aro":"Yowami wa, toki ni shincho ni narisugite ketsudan ga osoku naru koto desu. Kaizen no tame ni, ketsudan no kigen o meikaku ni settei suru you ishiki shite imasu.","aen":"My weakness is that I sometimes become too cautious and my decision-making slows down. To improve, I am consciously setting clear deadlines for decisions.","cw":"弱み → same as 短所 but more modern/common in IT","rw":"短所・デメリット・苦手な点","mh":"MODERN WEAKNESS = yowami"},{"r":47,"j":"ガクチカ","ro":"gakuchika","fs":"がくちか(same)","en":"What you devoted yourself to in school","pos":"Noun (Abbreviation)","jlpt":"N2","pl":"MUST KNOW","cat":"C. Self-Intro & Basic","qt":"STUDENT ACHIEVEMENT","ij":"学生時代に最も力を入れたことは何ですか？（ガクチカ）","iro":"Gakusei jidai ni mottomo chikara o ireta koto wa nan desu ka?","ien":"What did you devote the most effort to during your student days?","aj":"最も力を入れたのは手話認識AIの研究です。触覚センサのノイズ処理という技術的な壁に何度も直面しましたが、諦めずにTransformerモデルを実装し、精度を3%向上させることができました。","aro":"Mottomo chikara o ireta no wa shuwa ninshiki AI no kenkyuu desu. Shokkaku sensa no noizu shori to iu gijutsuteki na kabe ni nandomo chokumen shimashita ga, akiramezu ni Transformer moderu o jissou shi, seido o 3% koujou saseru koto ga dekimashita.","aen":"What I devoted the most effort to was my sign language recognition AI research. I faced the technical wall of tactile sensor noise processing many times, but without giving up I implemented a Transformer model and was able to improve accuracy by 3%.","cw":"ガクチカ = 学生時代に力を入れたこと; IT interview standard question","rw":"学生時代・力を入れた・取り組んだ","mh":"STUDENT ACHIEVEMENT = gakuchika. Standard new-grad interview question"},{"r":48,"j":"自己PR","ro":"jiko piiaaru","fs":"じこぴーあーる(same)","en":"Self-promotion / Pitch about yourself","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"C. Self-Intro & Basic","qt":"SELF PITCH","ij":"自己PRをお願いします。","iro":"Jiko piiaaru o onegaishimasu.","ien":"Please give us your self-promotion.","aj":"私はAI研究と実務インターンの両方を経験したエンジニア候補です。Transformerモデルの実装から楽天でのAPIテスト、Eyes JAPANでのアプリ開発まで、研究と実践のバランスが取れた人材だと自負しています。","aro":"Watashi wa AI kenkyuu to jitsumu intaan no ryouhou o keiken shita enjinia kouho desu. Transformer moderu no jissou kara Rakuten de no API tesuto, Eyes JAPAN de no apuri kaihatsu made, kenkyuu to jissen no baransu ga toreta jinzai da to jifu shite imasu.","aen":"I am an engineer candidate who has experience in both AI research and practical internships. From implementing Transformer models to API testing at Rakuten and app development at Eyes JAPAN, I am confident that I am a human resource with a good balance of research and practice.","cw":"自己PR = your pitch; different from 自己紹介 (just introducing yourself)","rw":"自己紹介・強みのアピール・自分のPR","mh":"SELF-PITCH = jiko PR. More achievement-focused than self-intro"},{"r":49,"j":"第一志望","ro":"daiichi shibou","fs":"だいいちしぼう→だいいちしぼ","en":"First choice / Top choice","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"C. Self-Intro & Basic","qt":"PREFERENCE","ij":"弊社は第一志望ですか？","iro":"Heisha wa daiichi shibou desu ka?","ien":"Is our company your first choice?","aj":"はい、御社が第一志望です。AI開発に力を入れている点と、充実した研修制度が私の目標に最も合っていると感じています。","aro":"Hai, onsha ga daiichi shibou desu. AI kaihatsu ni chikara o irete iru ten to, juujitsu shita kenshuu seido ga watashi no mokuhyou ni mottomo atte iru to kanjite imasu.","aen":"Yes, your company is my first choice. I feel that your focus on AI development and comprehensive training system best align with my goals.","cw":"第一志望 → だいいちしぼ at speed","rw":"第一希望・志望順位・優先度","mh":"FIRST CHOICE = daiichi shibou. Be ready with a yes + reason"},{"r":50,"j":"研究内容","ro":"kenkyuu naiyou","fs":"けんきゅうないよう(same)","en":"Research content/details","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"D. Research & Academic","qt":"RESEARCH","ij":"研究内容について詳しく教えてください。","iro":"Kenkyuu naiyou ni tsuite kuwashiku oshiete kudasai.","ien":"Please tell me the details of your research content.","aj":"触覚センサ付きデータグローブを使って手話のジェスチャーデータを収集し、TransformerモデルでリアルタイムにAI認識するシステムを開発しています。","aro":"Shokkaku sensa tsuki deetaguroobu o tsukatte shuwa no jesuchaa deeta o shuushuu shi, Transformer moderu de riaru taimu ni AI ninshiki suru shisutemu o kaihatsu shite imasu.","aen":"I am collecting sign language gesture data using a data glove with tactile sensors and developing a system that recognizes it in real time using a Transformer model.","cw":"研究内容 → けんきゅうないよう compressed at speed","rw":"研究テーマ・研究課題・研究について","mh":"RESEARCH CONTENT = kenkyuu naiyou"},{"r":51,"j":"修士論文","ro":"shuushi ronbun","fs":"しゅうしろんぶん(same)","en":"Master's thesis","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"D. Research & Academic","qt":"THESIS","ij":"修士論文のテーマを教えてください。","iro":"Shuushi ronbun no teema o oshiete kudasai.","ien":"Please tell me your master's thesis theme.","aj":"修士論文のテーマは「触覚センサを用いたデータグローブによるリアルタイム手話認識」です。Transformerモデルの有効性をLSTMやCNNと比較して検証しています。","aro":"Shuushi ronbun no teema wa 'shokkaku sensa o mochiita deetaguroobu ni yoru riaru taimu shuwa ninshiki' desu. Transformer moderu no yuukosei o LSTM ya CNN to hikaku shite kenshou shite imasu.","aen":"The theme of my master's thesis is 'Real-time Sign Language Recognition Using a Data Glove with Tactile Sensors.' I am verifying the effectiveness of the Transformer model by comparing it with LSTM and CNN.","cw":"修士論文 → 卒業論文 for undergrad","rw":"卒業論文・論文・研究テーマ","mh":"MASTER'S THESIS = shuushi ronbun"},{"r":52,"j":"指導教員","ro":"shidou kyouin","fs":"しどうきょういん(same)","en":"Academic supervisor / Advisor","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"D. Research & Academic","qt":"ACADEMIC","ij":"指導教員はどなたですか？","iro":"Shidou kyouin wa donata desu ka?","ien":"Who is your academic supervisor?","aj":"Lei JING教授のご指導のもと、センサーを使ったAI研究に取り組んでいます。","aro":"Lei JING kyouju no go shidou no moto, sensaa o tsukatta AI kenkyuu ni torikunde imasu.","aen":"Under the guidance of Professor Lei Jing, I am working on AI research using sensors.","cw":"指導教員 → 指導教官 also used; both mean supervisor","rw":"教授・研究室・ゼミ","mh":"SUPERVISOR = shidou kyouin"},{"r":53,"j":"研究室","ro":"kenkyuushitsu","fs":"けんきゅうしつ(same)","en":"Research lab / Laboratory","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"D. Research & Academic","qt":"ACADEMIC","ij":"研究室ではどのような雰囲気ですか？","iro":"Kenkyuushitsu de wa dono you na fun'iki desu ka?","ien":"What is the atmosphere like in your research lab?","aj":"国際的な雰囲気の研究室で、異なる文化のメンバーとともに研究に取り組んでいます。コミュニケーションを大切にしながら協力して研究を進めています。","aro":"Kokusaiteki na fun'iki no kenkyuushitsu de, kotonaru bunka no menbaa to tomo ni kenkyuu ni torikunde imasu. Komyunike-shon o taisetsu ni shinagara kyouryoku shite kenkyuu o susumete imasu.","aen":"In an internationally-oriented lab, I work on research alongside members from different cultures. We advance research collaboratively while valuing communication.","cw":"研究室 → ゼミ or ラボ in casual speech","rw":"ゼミ・ラボ・研究グループ","mh":"RESEARCH LAB = kenkyuushitsu"},{"r":54,"j":"卒業研究","ro":"sotsugyou kenkyuu","fs":"そつぎょうけんきゅう→そつけん","en":"Graduation research / Final project","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"D. Research & Academic","qt":"ACADEMIC","ij":"学部での卒業研究について教えてください。","iro":"Gakubu de no sotsugyou kenkyuu ni tsuite oshiete kudasai.","ien":"Please tell me about your graduation research at university.","aj":"学部では、インタラクティブ・エアキャンバスアプリに関する研究レビューを書き、国際学術誌（IJSREM）に掲載されました。","aro":"Gakubu de wa, intarakutibu ea kyanbasu apuri ni kansuru kenkyuu rebyuu o kaki, kokusai gakujutsu shi (IJSREM) ni keisai saremashita.","aen":"In my undergraduate studies, I wrote a research review on an interactive air canvas application, which was published in an international academic journal (IJSREM).","cw":"卒業研究 → そつけん informal","rw":"卒論・卒業制作・学部研究","mh":"GRADUATION RESEARCH = sotsugyou kenkyuu"},{"r":55,"j":"精度","ro":"seido","fs":"せいど(same)","en":"Accuracy / Precision","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"D. Research & Academic","qt":"TECHNICAL METRIC","ij":"認識精度はどのくらいですか？","iro":"Ninshiki seido wa dono kurai desu ka?","ien":"How is the recognition accuracy?","aj":"現在の精度は継続的に改善中です。ノイズ処理の最適化により、3%の精度向上を達成しました。","aro":"Genzai no seido wa keizokuteki ni kaizen chuu desu. Noizu shori no saitekika ni yori, 3% no seido koujou o tassei shimashita.","aen":"The current accuracy is continuously being improved. Through optimization of noise processing, I achieved a 3% accuracy improvement.","cw":"精度 → accuracy; 精確度 for precision (more specific)","rw":"正確性・認識率・F1スコア","mh":"ACCURACY = seido. Key metric in your research"},{"r":56,"j":"実験","ro":"jikken","fs":"じっけん(same)","en":"Experiment","pos":"Noun","jlpt":"N4","pl":"VERY IMPORTANT","cat":"D. Research & Academic","qt":"RESEARCH METHOD","ij":"どのような実験を行いましたか？","iro":"Dono you na jikken o okonaimashita ka?","ien":"What kind of experiments did you conduct?","aj":"25個の圧力センサとIMUモジュールを搭載したデータグローブを作成し、様々な手話ジェスチャーのデータを収集しました。その後、Transformerモデルで学習・評価しました。","aro":"25 ko no atsuryoku sensa to IMU mojuuru o tosai shita deetaguroobu o sakusei shi, samazama na shuwa jesuchaa no deeta o shuushuu shimashita. Sono nochi, Transformer moderu de gakushuu, hyouka shimashita.","aen":"I created a data glove equipped with 25 pressure sensors and an IMU module, and collected data for various sign language gestures. Then I trained and evaluated it using a Transformer model.","cw":"実験 → じっけん; 実験する = to conduct an experiment","rw":"試験・テスト・検証","mh":"EXPERIMENT = jikken"},{"r":57,"j":"今後の展望","ro":"kongo no tenbou","fs":"こんごのてんぼう(same)","en":"Future prospects / Vision going forward","pos":"Noun Phrase","jlpt":"N3","pl":"VERY IMPORTANT","cat":"D. Research & Academic","qt":"FUTURE/VISION","ij":"研究の今後の展望を教えてください。","iro":"Kenkyuu no kongo no tenbou o oshiete kudasai.","ien":"Please tell me the future prospects for your research.","aj":"将来的には、よりリアルタイム性の高いシステムを構築し、コミュニケーション支援ツールとして社会に実装したいと考えています。","aro":"Shourai teki ni wa, yori riaru taimu sei no takai shisutemu o kouchiku shi, komyunike-shon shien tsuuru to shite shakai ni jissou shitai to kangaete imasu.","aen":"In the future, I want to build a more real-time capable system and implement it in society as a communication support tool.","cw":"今後の展望 → こんごのてんぼう at speed","rw":"将来展望・ビジョン・今後の計画","mh":"FUTURE PROSPECTS = kongo no tenbou"},{"r":58,"j":"インターン","ro":"intaan","fs":"いんたーん(same)","en":"Internship / Intern","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"E. Internship & Work","qt":"WORK EXPERIENCE","ij":"インターンでどのような経験をされましたか？","iro":"Intaan de dono you na keiken o saremashita ka?","ien":"What kind of experience did you have at your internship?","aj":"HPEでマルチシステムインストーラ開発に参加し、楽天ではモバイルAPIの検証業務を担当しました。両方の経験を通じて、実務エンジニアとして重要なチームワークと技術的な問題解決力を身につけました。","aro":"HPE de maruchi shisutemu insutooraa kaihatsu ni sanka shi, Rakuten de wa mobairu API no kenshou gyoumu o tantou shimashita. Ryouhou no keiken o tsuujite, jitsumu enjinia to shite juuyou na chiimuwaaku to gijutsuteki na mondai kaiketsu ryoku o mi ni tsukemashita.","aen":"I participated in multi-system installer development at HPE and was in charge of mobile API verification work at Rakuten. Through both experiences, I acquired teamwork and technical problem-solving abilities important for a working engineer.","cw":"インターン → インターンシップ formal version","rw":"インターンシップ・実習・研修","mh":"INTERNSHIP = intaan"},{"r":59,"j":"業務内容","ro":"gyoumu naiyou","fs":"ぎょうむないよう→ぎょーむないよ","en":"Work content / Job duties","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"E. Internship & Work","qt":"WORK DETAILS","ij":"楽天インターンでの業務内容を詳しく教えてください。","iro":"Rakuten intaan de no gyoumu naiyou o kuwashiku oshiete kudasai.","ien":"Please tell me the details of your work content at the Rakuten internship.","aj":"楽天モバイルのAPIリクエストとレスポンスの検証をしました。エラーがあるかチェックし、品質保証に貢献しました。チームと連携しながら問題を報告し、改善提案も行いました。","aro":"Rakuten Mobairu no API rikuesuto to resupponsu no kenshou o shimashita. Eraa ga aru ka chekku shi, hinshitsu hoshyou ni kouken shimashita. Chiimu to renkei shinagara mondai o houkoku shi, kaizen teian mo okonaimashita.","aen":"I verified API requests and responses for Rakuten Mobile. I checked for errors and contributed to quality assurance. While liaising with the team, I reported problems and also made improvement proposals.","cw":"業務内容 → ぎょーむないよう fast","rw":"仕事内容・担当業務・作業内容","mh":"WORK CONTENT = gyoumu naiyou"},{"r":60,"j":"担当した","ro":"tantou shita","fs":"たんとうした(same)","en":"Was in charge of / Handled","pos":"Verb (past)","jlpt":"N3","pl":"MUST KNOW","cat":"E. Internship & Work","qt":"WORK CONTRIBUTION","ij":"そのプロジェクトでどの部分を担当しましたか？","iro":"Sono purojekuto de dono bubun o tantou shimashita ka?","ien":"Which part of that project were you in charge of?","aj":"HPEでは、マルチシステムインストーラのバックエンドモジュール開発の一部を担当しました。","aro":"HPE de wa, maruchi shisutemu insutooraa no bakku endo mojuuru kaihatsu no ichibu o tantou shimashita.","aen":"At HPE, I was in charge of part of the backend module development for the multi-system installer.","cw":"担当した → たんとうした; 担当しました = polite past","rw":"担当する・受け持つ・責任を持つ","mh":"IN CHARGE OF = tantou shita"},{"r":61,"j":"貢献","ro":"kouken","fs":"こうけん(same)","en":"Contribution / To contribute","pos":"Noun/Verb","jlpt":"N3","pl":"MUST KNOW","cat":"E. Internship & Work","qt":"IMPACT","ij":"そのインターンでどのような貢献をしましたか？","iro":"Sono intaan de dono you na kouken o shimashita ka?","ien":"What kind of contribution did you make at that internship?","aj":"APIの検証作業を通じて、リリース前のバグ発見に貢献しました。また、テスト手順をドキュメント化することで、チームの効率化に貢献しました。","aro":"API no kenshou sagyo o tsuujite, riisuze mae no bagu hakken ni kouken shimashita. Mata, tesuto tejun o dokyumento ka suru koto de, chiimu no kouritsuka ni kouken shimashita.","aen":"Through API verification work, I contributed to bug discovery before release. Also, by documenting test procedures, I contributed to improving team efficiency.","cw":"貢献 → こうけん; same at speed","rw":"寄与・役に立つ・貢献する","mh":"CONTRIBUTION = kouken. Show your impact, not just what you did"},{"r":62,"j":"チームで","ro":"chiimu de","fs":"ちーむで(same)","en":"In a team / As a team","pos":"Phrase","jlpt":"N4","pl":"MUST KNOW","cat":"E. Internship & Work","qt":"TEAMWORK","ij":"チームで働く時に、どのようなことを大切にしていますか？","iro":"Chiimu de hataraku toki ni, dono you na koto o taisetsu ni shite imasu ka?","ien":"What do you value when working in a team?","aj":"チームでは、積極的にコミュニケーションを取り、自分の進捗状況を共有することを大切にしています。また、困った時は一人で抱え込まず、早めに相談するよう心がけています。","aro":"Chiimu de wa, sekkyokuteki ni komyunike-shon o tori, jibun no shinchoku joukyou o kyouyuu suru koto o taisetsu ni shite imasu. Mata, komatta toki wa hitori de kakaekomanzu, hayame ni soudan suru you kokorogakete imasu.","aen":"In a team, I value actively communicating and sharing my progress status. Also, when I have a problem, I try not to keep it to myself but to consult others early.","cw":"チームで → ちーむで; very common phrase","rw":"チームワーク・協力・連携","mh":"IN A TEAM = chiimu de"},{"r":63,"j":"学んだこと","ro":"mananda koto","fs":"まなんだこと(same)","en":"What you learned / Lessons learned","pos":"Phrase","jlpt":"N4","pl":"MUST KNOW","cat":"E. Internship & Work","qt":"LEARNING","ij":"そのインターンで何を学びましたか？","iro":"Sono intaan de nani o manabimashita ka?","ien":"What did you learn at that internship?","aj":"楽天のインターンで最も学んだことは、実際の業務でのチーム連携の重要性です。研究とは異なり、複数の人と連携しながら品質を保つことの難しさと大切さを実感しました。","aro":"Rakuten no intaan de mottomo mananda koto wa, jissai no gyoumu de no chiimu renkei no juuyousei desu. Kenkyuu to wa kotonari, fukusuu no hito to renkei shinagara hinshitsu o tamotsu koto no muzukashisa to taisetsusa o jikkan shimashita.","aen":"What I learned most at the Rakuten internship was the importance of team coordination in actual work. Unlike research, I realized the difficulty and importance of maintaining quality while coordinating with multiple people.","cw":"学んだこと → まなんだこと; also 得たこと = what you gained","rw":"得たこと・気づき・経験から学ぶ","mh":"WHAT YOU LEARNED = mananda koto"},{"r":64,"j":"入社後","ro":"nyuusha go","fs":"にゅうしゃご→にゅーしゃご","en":"After joining the company","pos":"Phrase","jlpt":"N3","pl":"MUST KNOW","cat":"E. Internship & Work","qt":"FUTURE PLANS","ij":"入社後は何をしたいですか？","iro":"Nyuusha go wa nani o shitai desu ka?","ien":"What do you want to do after joining the company?","aj":"入社後は、まず御社の技術スタックとプロジェクト管理手法をしっかり習得したいと思います。そのうえで、AIエンジニアとして製品開発に貢献し、ゆくゆくはチームのリーダー的存在になりたいです。","aro":"Nyuusha go wa, mazu onsha no gijutsu sutakku to purojekuto kanri shuhou o shikkari shuutoku shitai to omoimasu. Sono ue de, AI enjinia to shite seihin kaihatsu ni kouken shi, yuku yuku wa chiimu no riidaa teki sonzai ni naritai desu.","aen":"After joining, I first want to firmly master your company's technology stack and project management methods. Building on that, I want to contribute to product development as an AI engineer and eventually become a leadership presence in the team.","cw":"入社後 → にゅーしゃご fast","rw":"就職後・採用後・入社してから","mh":"AFTER JOINING = nyuusha go. Vision for first year is key"},{"r":65,"j":"資格","ro":"shikaku","fs":"しかく(same)","en":"Qualification / Certification","pos":"Noun","jlpt":"N4","pl":"MUST KNOW","cat":"F. Certification & Learning","qt":"CERTIFICATION","ij":"どのような資格をお持ちですか？","iro":"Dono you na shikaku o omochi desu ka?","ien":"What qualifications/certifications do you have?","aj":"日本語能力試験N5を取得しています。また、Kaggleの深層学習コース、IBM SkillsBuildのNLPとコンピュータビジョン、UdemyのPythonブートキャンプなど、複数のオンライン資格を取得しています。","aro":"Nihongo Nouryoku Shiken N5 o shutoku shite imasu. Mata, Kaggle no shinsou gakushuu koosu, IBM SkillsBuild no NLP to konpyuuta bijon, Udemy no Python buutokyanpu nado, fukusuu no onrain shikaku o shutoku shite imasu.","aen":"I have obtained the Japanese Language Proficiency Test N5. I have also obtained multiple online certifications including Kaggle's deep learning course, IBM SkillsBuild's NLP and computer vision, and Udemy's Python bootcamp.","cw":"資格 → しかく; same but sometimes 認定 ninntei for certifications","rw":"認定・免許・資格取得","mh":"QUALIFICATION = shikaku"},{"r":66,"j":"取得した","ro":"shutoku shita","fs":"しゅとくした→しゅとくした","en":"Obtained / Acquired","pos":"Verb (past)","jlpt":"N3","pl":"MUST KNOW","cat":"F. Certification & Learning","qt":"ACQUISITION","ij":"その資格はいつ取得しましたか？","iro":"Sono shikaku wa itsu shutoku shimashita ka?","ien":"When did you obtain that qualification?","aj":"JLPT N5は2024年12月に取得しました。現在はN3レベルを目指して日々勉強を続けています。","aro":"JLPT N5 wa 2024 nen 12 gatsu ni shutoku shimashita. Genzai wa N3 reberu o mezashite hibi benkyou o tsuzukete imasu.","aen":"I obtained JLPT N5 in December 2024. I am currently continuing to study every day aiming for N3 level.","cw":"取得した → 取得しました polite version","rw":"習得・修了・合格","mh":"OBTAINED = shutoku shita"},{"r":67,"j":"修了した","ro":"shuuryou shita","fs":"しゅうりょうした→しゅーりょした","en":"Completed / Finished (course)","pos":"Verb (past)","jlpt":"N3","pl":"VERY IMPORTANT","cat":"F. Certification & Learning","qt":"COMPLETION","ij":"オンラインコースを修了した理由は何ですか？","iro":"Onrain koosu o shuuryou shita riyuu wa nan desu ka?","ien":"What was the reason you completed that online course?","aj":"深層学習とNLPのスキルを研究に活かすため、実践的なオンラインコースを受講して修了しました。学んだ内容はすぐに研究のコード実装に役立てました。","aro":"Shinsou gakushuu to NLP no sukiru o kenkyuu ni ikasu tame, jissanteki na onrain koosu o jukou shite shuuryou shimashita. Mananda naiyou wa sugu ni kenkyuu no koodo jissou ni yakudatemashita.","aen":"In order to apply deep learning and NLP skills to my research, I took and completed practical online courses. The content I learned was immediately useful for code implementation in my research.","cw":"修了した → 完了した・終了した also used","rw":"完了・修了・終了・終えた","mh":"COMPLETED (course) = shuuryou shita"},{"r":68,"j":"難しかった点","ro":"muzukashikatta ten","fs":"むずかしかったてん→むずかしかったとこ","en":"Difficult parts / Challenging aspects","pos":"Phrase","jlpt":"N3","pl":"MUST KNOW","cat":"F. Certification & Learning","qt":"DIFFICULTY","ij":"その資格を取る中で難しかった点は何ですか？","iro":"Sono shikaku o toru naka de muzukashikatta ten wa nan desu ka?","ien":"What were the difficult parts of obtaining that qualification?","aj":"PyTorchコースでは、最初は数学的な概念（バックプロパゲーションなど）が難しかったです。しかし、実際にコードを書いて実験することで徐々に理解できました。","aro":"PyTorch koosu de wa, saisho wa suugakuteki na gainen (bakkupuropagee-shon nado) ga muzukashikatta desu. Shikashi, jissai ni koodo o kaite jikken suru koto de jojo ni rikai dekimashita.","aen":"In the PyTorch course, at first the mathematical concepts (such as backpropagation) were difficult. However, I was gradually able to understand by actually writing code and experimenting.","cw":"難しかった点 → むずかしかったとこ casual","rw":"苦労した点・大変だった・チャレンジング","mh":"DIFFICULT PARTS = muzukashikatta ten"},{"r":69,"j":"楽しかった点","ro":"tanoshikatta ten","fs":"たのしかったてん→たのしかったとこ","en":"Enjoyable parts / What was fun","pos":"Phrase","jlpt":"N4","pl":"MUST KNOW","cat":"F. Certification & Learning","qt":"ENJOYMENT","ij":"その仕事や勉強で楽しかったことは何ですか？","iro":"Sono shigoto ya benkyou de tanoshikatta koto wa nan desu ka?","ien":"What was enjoyable about that work or study?","aj":"楽天インターンで一番楽しかったのは、自分がテストしたAPIが実際のサービスに使われていると実感できた時です。実際の製品に貢献しているという充実感がありました。","aro":"Rakuten intaan de ichiban tanoshikatta no wa, jibun ga tesuto shita API ga jissai no saabisu ni tsukawarete iru to jikkan dekita toki desu. Jissai no seihin ni kouken shite iru to iu juujitsu kan ga arimashita.","aen":"The most enjoyable thing at the Rakuten internship was when I could feel that the API I had tested was being used in an actual service. There was a sense of fulfillment from contributing to an actual product.","cw":"楽しかった点 → たのしかったとこ casual","rw":"やりがい・喜び・充実感","mh":"ENJOYABLE PARTS = tanoshikatta ten"},{"r":70,"j":"印象に残った","ro":"inshou ni nokotta","fs":"いんしょうにのこった→いんしょうにのこった","en":"Left an impression / Memorable","pos":"Phrase","jlpt":"N3","pl":"MUST KNOW","cat":"F. Certification & Learning","qt":"MEMORABLE","ij":"インターンで最も印象に残ったことは何ですか？","iro":"Intaan de mottomo inshou ni nokotta koto wa nan desu ka?","ien":"What left the strongest impression on you during the internship?","aj":"楽天では、実際の本番サービスのAPIを検証していたため、ミスが許されないというプレッシャーが印象に残っています。その経験を通して、品質へのこだわりと責任感が育まれました。","aro":"Rakuten de wa, jissai no honban saabisu no API o kenshou shite ita tame, misu ga yurusarenai to iu purssshaa ga inshou ni nokotte imasu. Sono keiken o tooshite, hinshitsu he no kodawari to sekinin kan ga hagukumaremashita.","aen":"At Rakuten, what left an impression was the pressure of verifying APIs for an actual production service where mistakes were not permitted. Through that experience, my commitment to quality and sense of responsibility were nurtured.","cw":"印象に残った → いんしょうにのこった; also 心に残った","rw":"記憶に残る・忘れられない・一番の思い出","mh":"LEFT AN IMPRESSION = inshou ni nokotta"},{"r":71,"j":"やりがい","ro":"yarigi","fs":"やりがい(same)","en":"Sense of fulfillment / Rewarding feeling","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"F. Certification & Learning","qt":"SATISFACTION","ij":"仕事においてやりがいを感じる瞬間はいつですか？","iro":"Shigoto ni oite yarigi o kanjiru shunkan wa itsu desu ka?","ien":"When do you feel a sense of fulfillment in your work?","aj":"研究で新しいアルゴリズムを実装して、精度が改善された瞬間に一番やりがいを感じます。努力が数字として現れる時の喜びは格別です。","aro":"Kenkyuu de atarashii arugorizumu o jissou shite, seido ga kaizen sareta shunkan ni ichiban yarigi o kanjimasu. Doryoku ga suuji to shite arawareru toki no yorokobi wa kakubetsu desu.","aen":"I feel the greatest fulfillment at the moment when I implement a new algorithm in my research and accuracy improves. The joy when effort appears as numbers is special.","cw":"やりがい → やりがいがある(adjective form); やりがいを感じる","rw":"充実感・達成感・喜び・モチベーション","mh":"FULFILLMENT = yarigi. Very common interview topic"},{"r":72,"j":"苦労した","ro":"kurou shita","fs":"くろうした(same)","en":"Struggled / Had difficulty with","pos":"Verb (past)","jlpt":"N3","pl":"MUST KNOW","cat":"F. Certification & Learning","qt":"STRUGGLE","ij":"一番苦労したことは何ですか？","iro":"Ichiban kurou shita koto wa nan desu ka?","ien":"What did you struggle with the most?","aj":"研究でセンサデータのノイズ除去に最も苦労しました。様々なフィルタリング手法を試しましたが、なかなか精度が上がらず、3ヶ月ほど試行錯誤を繰り返しました。","aro":"Kenkyuu de sensa deeta no noizu jokyo ni mottomo kurou shimashita. Samazama na firutaringu shuhou o tameshimashita ga, nakanaka seido ga agarazu, san kagetsu hodo shikou sakugo o kurikaeshimashita.","aen":"I struggled the most with noise removal from sensor data in my research. I tried various filtering methods, but accuracy did not improve easily, and I repeated trial and error for about 3 months.","cw":"苦労した → くろうした; くろした even faster","rw":"大変だった・困難だった・苦しんだ","mh":"STRUGGLED = kurou shita. Be specific about what and how you overcame it"},{"r":73,"j":"克服した","ro":"kokufuku shita","fs":"こくふくした→こくふくした","en":"Overcame / Conquered","pos":"Verb (past)","jlpt":"N3","pl":"MUST KNOW","cat":"F. Certification & Learning","qt":"OVERCOMING","ij":"その苦労をどうやって克服しましたか？","iro":"Sono kurou o dou yatte kokufuku shimashita ka?","ien":"How did you overcome that struggle?","aj":"論文を読み漁り、様々なノイズ除去アルゴリズムを実装して比較することで克服しました。最終的にはモデルのアーキテクチャとデータ前処理を組み合わせることで突破口を見つけました。","aro":"Ronbun o yomisasari, samazama na noizu jokyo arugorizumu o jissou shite hikaku suru koto de kokufuku shimashita. Saishuteki ni wa moderu no aakitekucha to deeta zenshori o kumiawaseru koto de toppa kou o mitsukemashita.","aen":"I overcame it by reading papers extensively and implementing and comparing various noise removal algorithms. In the end, I found a breakthrough by combining the model architecture with data preprocessing.","cw":"克服した → こくふくした; also 乗り越えた norikoeta","rw":"乗り越える・突破する・解決する","mh":"OVERCAME = kokufuku shita"},{"r":74,"j":"達成感","ro":"tassei kan","fs":"たっせいかん→たっせかん","en":"Sense of achievement","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"F. Certification & Learning","qt":"ACHIEVEMENT FEELING","ij":"一番達成感を感じたのはいつですか？","iro":"Ichiban tassei kan o kanjita no wa itsu desu ka?","ien":"When did you feel the greatest sense of achievement?","aj":"研究でノイズ処理を改善してモデルの精度が上がった瞬間が一番の達成感でした。何ヶ月もかけて取り組んだ努力が結果として現れた喜びは忘れられません。","aro":"Kenkyuu de noizu shori o kaizen shite moderu no seido ga agatta shunkan ga ichiban no tassei kan deshita. Nan kagetsu mo kakete torikunda doryoku ga kekka to shite arawareta yorokobi wa wasureraremasen.","aen":"The greatest sense of achievement was the moment when accuracy improved after improving noise processing in my research. I cannot forget the joy of months of effort appearing as results.","cw":"達成感 → たっせかん fast","rw":"やりがい・充実感・満足感","mh":"SENSE OF ACHIEVEMENT = tassei kan"},{"r":75,"j":"趣味","ro":"shumi","fs":"しゅみ(same)","en":"Hobby / Interest","pos":"Noun","jlpt":"N5","pl":"MUST KNOW","cat":"G. Personality & Personal","qt":"PERSONAL","ij":"趣味は何ですか？","iro":"Shumi wa nan desu ka?","ien":"What are your hobbies?","aj":"趣味はインドのクラシック音楽を歌うことと読書です。歌は感情表現の訓練になり、本は幅広い視野を与えてくれます。どちらも日本語学習にも役立てています。","aro":"Shumi wa Indo no kurashikku ongaku o utau koto to dokusho desu. Uta wa kanjou hyougen no kunren ni nari, hon wa habahiroi shiya o ataete kuremasu. Dochira mo nihongo gakushuu ni mo yakudatete imasu.","aen":"My hobbies are singing Indian classical music and reading. Singing trains emotional expression, and books give me a broad perspective. Both are also helpful for my Japanese language learning.","cw":"趣味 → しゅみ; same","rw":"特技・好きなこと・余暇活動","mh":"HOBBY = shumi. Always connect to work-relevant qualities"},{"r":76,"j":"特技","ro":"tokugi","fs":"とくぎ(same)","en":"Special skill / Talent","pos":"Noun","jlpt":"N4","pl":"VERY IMPORTANT","cat":"G. Personality & Personal","qt":"PERSONAL","ij":"何か特技はありますか？","iro":"Nanika tokugi wa arimasu ka?","ien":"Do you have any special skills?","aj":"特技は、新しい技術を短期間で習得することです。Python、PyTorch、Google Health Connect APIなど、必要になった技術をすぐに実務レベルまで習得してきました。","aro":"Tokugi wa, atarashii gijutsu o tanki kan de shuutoku suru koto desu. Python, PyTorch, Google Health Connect API nado, hitsuyou ni natta gijutsu o sugu ni jitsumu reberu made shuutoku shite kimashita.","aen":"My special skill is acquiring new technologies in a short period. I have quickly acquired technologies I needed, such as Python, PyTorch, and Google Health Connect API, up to a practical level.","cw":"特技 → とくぎ; same","rw":"スキル・得意なこと・強み","mh":"SPECIAL SKILL = tokugi"},{"r":77,"j":"休日","ro":"kyuujitsu","fs":"きゅうじつ→きゅーじつ","en":"Day off / Holiday","pos":"Noun","jlpt":"N4","pl":"VERY IMPORTANT","cat":"G. Personality & Personal","qt":"LIFESTYLE","ij":"休日はどのように過ごしていますか？","iro":"Kyuujitsu wa dono you ni sugoshite imasu ka?","ien":"How do you spend your days off?","aj":"休日は日本語の勉強、読書、そして歌の練習をしています。また、研究の進捗次第ではコーディングをすることもあります。体を動かすために散歩もよくします。","aro":"Kyuujitsu wa nihongo no benkyou, dokusho, soshite uta no renshuu o shite imasu. Mata, kenkyuu no shinchoku shidai de wa koodingu o suru koto mo arimasu. Karada o ugokasu tame ni sanpo mo yoku shimasu.","aen":"On days off, I study Japanese, read books, and practice singing. Also, depending on my research progress, I sometimes code. I also often go for walks to get some exercise.","cw":"休日 → きゅーじつ at speed","rw":"休み・オフの日・プライベート","mh":"DAY OFF = kyuujitsu"},{"r":78,"j":"最近読んだ本","ro":"saikin yonda hon","fs":"さいきんよんだほん(same)","en":"A book you recently read","pos":"Phrase","jlpt":"N3","pl":"VERY IMPORTANT","cat":"G. Personality & Personal","qt":"PERSONAL/INTELLECTUAL","ij":"最近読んだ本や気になっている本はありますか？","iro":"Saikin yonda hon ya ki ni natte iru hon wa arimasu ka?","ien":"Is there a book you recently read or are interested in?","aj":"最近はAI倫理に関する本を読んでいます。技術者として、AIが社会に与える影響について深く考えることが重要だと思うからです。","aro":"Saikin wa AI rinri ni kansuru hon o yonde imasu. Gijutsusha to shite, AI ga shakai ni ataeru eikyou ni tsuite fukaku kangaeru koto ga juuyou da to omou kara desu.","aen":"Recently I have been reading books about AI ethics. That is because I think it is important for an engineer to think deeply about the impact AI has on society.","cw":"最近読んだ本 → さいきんよんだほん; casual = さいきん何か読んだ？","rw":"読書・本・知識","mh":"RECENT BOOK = saikin yonda hon"},{"r":79,"j":"尊敬する人","ro":"sonkei suru hito","fs":"そんけいするひと→そんけいするひと","en":"Someone you respect / Role model","pos":"Phrase","jlpt":"N3","pl":"VERY IMPORTANT","cat":"G. Personality & Personal","qt":"PERSONAL/VALUES","ij":"尊敬する人や影響を受けた人はいますか？","iro":"Sonkei suru hito ya eikyou o uketa hito wa imasu ka?","ien":"Is there someone you respect or who has influenced you?","aj":"研究指導のJING教授を尊敬しています。常に学生の可能性を信じ、適切なフィードバックで研究を導いてくださる姿勢から、良いメンターとはどうあるべきかを学んでいます。","aro":"Kenkyuu shidou no JING kyouju o sonkei shite imasu. Tsune ni gakusei no kanousei o shinjite, tekisetsu na fiidobakku de kenkyuu o michibite kudasaru shisei kara, yoi mentaa to wa dou aru beki ka o manande imasu.","aen":"I respect Professor Jing, my research supervisor. I am learning what a good mentor should be from their attitude of always believing in students' potential and guiding research with appropriate feedback.","cw":"尊敬する人 → そんけいするひと; そんけいしてるひと casual","rw":"ロールモデル・影響を受けた人","mh":"SOMEONE YOU RESPECT = sonkei suru hito"},{"r":80,"j":"ストレス発散","ro":"sutoresu hassan","fs":"すとれすはっさん→すとれすはっさん","en":"Stress relief / Stress management","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"G. Personality & Personal","qt":"STRESS MANAGEMENT","ij":"ストレスはどのように発散していますか？","iro":"Sutoresu wa dono you ni hassan shite imasu ka?","ien":"How do you relieve stress?","aj":"音楽を歌うことと散歩が一番のストレス発散です。研究で詰まった時は、一度離れて好きなことをすることで、気持ちをリセットして新しい視点で問題に取り組めます。","aro":"Ongaku o utau koto to sanpo ga ichiban no sutoresu hassan desu. Kenkyuu de tsumatta toki wa, ichido hanarete suki na koto o suru koto de, kimochi o risetto shite atarashii shiten de mondai ni torikumemasu.","aen":"Singing music and walking are my best stress relief. When I get stuck in research, by stepping away and doing what I enjoy, I can reset my feelings and approach problems from a new perspective.","cw":"ストレス発散 → すとれすはっさん at speed","rw":"ストレス解消・気分転換・リフレッシュ","mh":"STRESS RELIEF = sutoresu hassan"},{"r":81,"j":"座右の銘","ro":"zayuu no mei","fs":"ざゆうのめい→ざゆうのめい","en":"Favorite motto / Words to live by","pos":"Noun Phrase","jlpt":"N3","pl":"VERY IMPORTANT","cat":"G. Personality & Personal","qt":"VALUES","ij":"座右の銘や大切にしている言葉はありますか？","iro":"Zayuu no mei ya taisetsu ni shite iru kotoba wa arimasu ka?","ien":"Do you have a favorite motto or words you cherish?","aj":"「やって後悔するほうが、やらずに後悔するよりもよい」という言葉を大切にしています。新しいことに挑戦する際の勇気を与えてくれます。","aro":"Yatte koukai suru hou ga, yarazu ni koukai suru yori mo yoi to iu kotoba o taisetsu ni shite imasu. Atarashii koto ni chousen suru sai no yuuki o ataete kuremasu.","aen":"I cherish the saying 'It is better to regret having done something than to regret not having done it.' It gives me courage when challenging new things.","cw":"座右の銘 → ざゆうのめい; somewhat formal phrase","rw":"モットー・信条・大切にしている言葉","mh":"MOTTO = zayuu no mei"},{"r":82,"j":"性格","ro":"seikaku","fs":"せいかく(same)","en":"Personality / Character","pos":"Noun","jlpt":"N4","pl":"MUST KNOW","cat":"G. Personality & Personal","qt":"PERSONALITY","ij":"ご自身の性格をどう思いますか？","iro":"Gojishin no seikaku o dou omoimasu ka?","ien":"How would you describe your own personality?","aj":"好奇心旺盛で、粘り強い性格だと思います。新しい技術に興味を持ち、難しい課題でも諦めずに取り組む姿勢は、研究でも実務でも評価していただいています。","aro":"Koukishin ousei de, nebari zuyoi seikaku da to omoimasu. Atarashii gijutsu ni kyoumi o mochi, muzukashii kadai de mo akiramezu ni torikumu shisei wa, kenkyuu de mo jitsumu de mo hyouka shite itadaite imasu.","aen":"I think I have a curious and tenacious personality. My attitude of being interested in new technologies and not giving up on difficult challenges has been appreciated both in research and practical work.","cw":"性格 → せいかく; 人柄 hitogara also used","rw":"人柄・キャラクター・個性","mh":"PERSONALITY = seikaku"},{"r":83,"j":"友人からの評価","ro":"yuujin kara no hyouka","fs":"ゆうじんからのひょうか→ゆうじんからどー見られてる","en":"How friends evaluate you","pos":"Phrase","jlpt":"N3","pl":"VERY IMPORTANT","cat":"G. Personality & Personal","qt":"SOCIAL PERCEPTION","ij":"友人からはどのような人物だと言われますか？","iro":"Yuujin kara wa dono you na jinbutsu da to iwaremasu ka?","ien":"What kind of person do your friends say you are?","aj":"友人からは、「困った時に頼りになる」「新しいことへの挑戦を楽しんでいる」と言われます。また、異文化交流が好きで友人が多国籍であることから、「オープンマインド」とも言われます。","aro":"Yuujin kara wa, komatta toki ni tayori ni naru, atarashii koto he no chousen o tanoshinde iru to iwaremasu. Mata, ibunka kouryuu ga suki de yuujin ga takokunaiteki de aru koto kara, oopun maindo to mo iwaremasu.","aen":"My friends say I am 'reliable in times of trouble' and that I 'enjoy challenging new things.' Also, because I enjoy intercultural exchange and have multinational friends, I am also told I am 'open-minded.'","cw":"友人からの評価 → ゆうじんからどー見られてる casual","rw":"他人の評価・周りからの印象","mh":"HOW FRIENDS SEE YOU = yuujin kara no hyouka"},{"r":84,"j":"10年後","ro":"juu nen go","fs":"じゅうねんご→じゅーねんご","en":"10 years from now","pos":"Time Expression","jlpt":"N4","pl":"VERY IMPORTANT","cat":"G. Personality & Personal","qt":"LONG-TERM GOALS","ij":"10年後の自分はどうなっていると思いますか？","iro":"Juu nen go no jibun wa dou natte iru to omoimasu ka?","ien":"What do you think you will be like in 10 years?","aj":"10年後には、AI技術のスペシャリストとして、チームをリードできるエンジニアになっていたいです。また、日本語をビジネスレベルまで磨き、日本社会に深く根ざした人材になりたいと思っています。","aro":"Juu nen go ni wa, AI gijutsu no supesharisuto to shite, chiimu o riido dekiru enjinia ni natte itai desu. Mata, nihongo o bijinesu reberu made migaki, nihon shakai ni fukaku nezashita jinzai ni naritai to omotte imasu.","aen":"In 10 years, I want to be an engineer who can lead a team as an AI technology specialist. Also, I want to refine my Japanese to business level and become a person deeply rooted in Japanese society.","cw":"10年後 → じゅーねんご; キャリアビジョンで聞かれる","rw":"将来・未来・長期目標","mh":"10 YEARS FROM NOW = juu nen go"},{"r":85,"j":"事業内容","ro":"jigyou naiyou","fs":"じぎょうないよう→じぎょーないよ","en":"Business content / Company's business","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"H. Company & Info Session","qt":"COMPANY UNDERSTANDING","ij":"弊社の事業内容はご存知ですか？","iro":"Heisha no jigyou naiyou wa go zonji desu ka?","ien":"Are you aware of our company's business content?","aj":"はい、御社はAIソリューションとソフトウェア開発を主力事業としており、特に製造業向けの画像認識システムに強みをお持ちだと認識しています。","aro":"Hai, onsha wa AI soryuushon to sofutowea kaihatsu o shuryoku jigyou to shite ori, toku ni seizougyou muke no gazou ninshiki shisutemu ni tsuyomi o omochi da to ninshiki shite imasu.","aen":"Yes, I understand that your company has AI solutions and software development as its main business, and is particularly strong in image recognition systems for the manufacturing industry.","cw":"事業内容 → じぎょーないよ fast; very important to understand in info sessions","rw":"業務内容・ビジネス・事業","mh":"BUSINESS CONTENT = jigyou naiyou. Learn this for info sessions"},{"r":86,"j":"主力サービス","ro":"shuryoku saabisu","fs":"しゅりょくさーびす→しゅりょくさーびす","en":"Main service / Core service","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"H. Company & Info Session","qt":"COMPANY UNDERSTANDING","ij":"弊社の主力サービスについて、どのようにお考えですか？","iro":"Heisha no shuryoku saabisu ni tsuite, dono you ni okangae desu ka?","ien":"What are your thoughts about our company's main service?","aj":"御社の主力サービスである〇〇について、社会課題の解決に直結している点に非常に魅力を感じています。私のAI研究の経験を活かせる場だと思っています。","aro":"Onsha no shuryoku saabisu de aru XX ni tsuite, shakai kadai no kaiketsu ni chokketsu shite iru ten ni hijou ni miryoku o kanjite imasu. Watashi no AI kenkyuu no keiken o ikaseru ba da to omotte imasu.","aen":"Regarding your company's main service XX, I find it very attractive that it directly connects to solving social issues. I think it is a place where I can apply my AI research experience.","cw":"主力サービス → しゅりょくさーびす at speed","rw":"メインサービス・主要製品・中核事業","mh":"MAIN SERVICE = shuryoku saabisu"},{"r":87,"j":"企業理念","ro":"kigyou rinen","fs":"きぎょうりねん→きぎょーりねん","en":"Corporate philosophy / Company mission","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"H. Company & Info Session","qt":"COMPANY UNDERSTANDING","ij":"弊社の企業理念に共感できる点はありますか？","iro":"Heisha no kigyou rinen ni kyoukan dekiru ten wa arimasu ka?","ien":"Are there points in our company's corporate philosophy that you can relate to?","aj":"御社の「技術で社会をより良くする」という理念に深く共感しています。私も手話認識AIの研究を通じて、技術が人々の生活を改善できると信じているからです。","aro":"Onsha no gijutsu de shakai o yori yoku suru to iu rinen ni fukaku kyoukan shite imasu. Watashi mo shuwa ninshiki AI no kenkyuu o tsuujite, gijutsu ga hitobito no seikatsu o kaizen dekiru to shinjite iru kara desu.","aen":"I deeply relate to your company's philosophy of 'making society better through technology.' This is because I also believe, through my sign language recognition AI research, that technology can improve people's lives.","cw":"企業理念 → きぎょーりねん fast","rw":"ミッション・ビジョン・会社の方針","mh":"CORPORATE PHILOSOPHY = kigyou rinen"},{"r":88,"j":"研修制度","ro":"kenshuu seido","fs":"けんしゅうせいど→けんしゅーせいど","en":"Training system / Training program","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"H. Company & Info Session","qt":"COMPANY PROGRAMS","ij":"弊社では充実した研修制度をご用意しています。","iro":"Heisha de wa juujitsu shita kenshuu seido o go youi shite imasu.","ien":"Our company has a comprehensive training system prepared for you.","aj":"(When you hear this in an info session, note it - good to ask about in reverse questions)","aro":"(Info session: company explaining benefit)","aen":"(Training system info - listen carefully for details)","cw":"研修制度 → けんしゅーせいど fast; OJT is also used","rw":"OJT・トレーニング・社員育成","mh":"TRAINING SYSTEM = kenshuu seido. Great topic for your reverse question"},{"r":89,"j":"キャリアパス","ro":"kyaria pasu","fs":"きゃりあぱす(same)","en":"Career path / Career track","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"H. Company & Info Session","qt":"CAREER","ij":"弊社のキャリアパスについて説明します。","iro":"Heisha no kyaria pasu ni tsuite setsumei shimasu.","ien":"I will explain our company's career path.","aj":"御社のキャリアパスについてもう少し詳しく教えていただけますか？特にエンジニアとして成長するための機会について興味があります。","aro":"Onsha no kyaria pasu ni tsuite mou sukoshi kuwashiku oshiete itadakemasu ka? Toku ni enjinia to shite seichou suru tame no kikai ni tsuite kyoumi ga arimasu.","aen":"Could you tell me a bit more about your company's career path? I am particularly interested in opportunities for growth as an engineer.","cw":"キャリアパス → きゃりあぱす English loanword","rw":"キャリア・成長経路・出世","mh":"CAREER PATH = kyaria pasu"},{"r":90,"j":"社風","ro":"shafuu","fs":"しゃふう(same)","en":"Company culture / Workplace atmosphere","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"H. Company & Info Session","qt":"COMPANY CULTURE","ij":"弊社の社風はオープンで風通しのよい環境です。","iro":"Heisha no shafuu wa oopun de kazetooshi no yoi kankyou desu.","ien":"Our company's culture is open and has a good atmosphere.","aj":"御社の社風についてお聞きしたいのですが、エンジニア間での技術共有や勉強会などは活発に行われていますか？","aro":"Onsha no shafuu ni tsuite okiki shitai no desu ga, enjinia kan de no gijutsu kyouyuu ya benkyoukai nado wa kappatsu ni okonawarete imasu ka?","aen":"I would like to ask about your company's culture - are technical sharing and study sessions among engineers actively conducted?","cw":"社風 → しゃふう; also 職場環境 workplace environment","rw":"企業文化・職場の雰囲気・文化","mh":"COMPANY CULTURE = shafuu"},{"r":91,"j":"売上高","ro":"uriage daka","fs":"うりあげだか→うりあげだか","en":"Revenue / Sales amount","pos":"Noun","jlpt":"N3","pl":"IMPORTANT","cat":"H. Company & Info Session","qt":"COMPANY FINANCIALS","ij":"弊社の昨年の売上高は〇〇億円でした。","iro":"Heisha no sakunen no uriage daka wa XX oku en deshita.","ien":"Our company's revenue last year was XX hundred million yen.","aj":"(INFO SESSION VOCAB - when you hear this, company is explaining their financial size)","aro":"(Company describing their size/performance)","aen":"(Financial info in info session)","cw":"売上高 → うりあげだか; key business vocab","rw":"収益・利益・業績","mh":"REVENUE = uriage daka. Company explaining their size"},{"r":92,"j":"グローバル展開","ro":"guroobaroru tenkai","fs":"ぐろーばるてんかい→ぐろーばるてんかい","en":"Global expansion","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"H. Company & Info Session","qt":"COMPANY STRATEGY","ij":"弊社は現在、グローバル展開を積極的に進めています。","iro":"Heisha wa genzai, guroobaroru tenkai o sekkyokuteki ni susumete imasu.","ien":"Our company is currently actively advancing global expansion.","aj":"御社のグローバル展開に非常に興味があります。インド出身で多文化的な背景を持つ私は、そのような環境でこそ強みを発揮できると思っています。","aro":"Onsha no guroobaroru tenkai ni hijou ni kyoumi ga arimasu. Indo shusshin de tabunkateki na haikei o motsu watashi wa, sono you na kankyou de koso tsuyomi o hakki dekiru to omotte imasu.","aen":"I am very interested in your company's global expansion. Coming from India with a multicultural background, I think I can demonstrate my strengths especially in such an environment.","cw":"グローバル展開 → ぐろーばるてんかい","rw":"国際展開・海外進出・グローバル化","mh":"GLOBAL EXPANSION = guroobaroru tenkai"},{"r":93,"j":"部署","ro":"busho","fs":"ぶしょ(same)","en":"Department / Division","pos":"Noun","jlpt":"N4","pl":"VERY IMPORTANT","cat":"H. Company & Info Session","qt":"COMPANY STRUCTURE","ij":"どの部署を希望されていますか？","iro":"Dono busho o kibou sarete imasu ka?","ien":"Which department are you hoping for?","aj":"AI開発部門または研究開発部署を希望しています。私の機械学習と深層学習の経験を活かせる部署に配属していただければと思います。","aro":"AI kaihatsu bumon mata wa kenkyuu kaihatsu busho o kibou shite imasu. Watashi no kikai gakushuu to shinsou gakushuu no keiken o ikaseru busho ni haizoku shite itadakereba to omoimasu.","aen":"I hope for the AI development division or research and development department. I hope to be assigned to a department where I can apply my machine learning and deep learning experience.","cw":"部署 → ぶしょ; also 部門 bumon","rw":"部門・チーム・グループ","mh":"DEPARTMENT = busho"},{"r":94,"j":"技術スタック","ro":"gijutsu sutakku","fs":"ぎじゅつすたっく→ぎじゅつすたっく","en":"Technology stack","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"H. Company & Info Session","qt":"TECHNICAL","ij":"弊社ではどのような技術スタックを使用していますか？","iro":"Heisha de wa dono you na gijutsu sutakku o shiyou shite imasu ka?","ien":"What kind of technology stack does your company use?","aj":"(GREAT REVERSE QUESTION to ask) Could you tell me about the technology stack your engineering team uses?","aro":"(Ask this in reverse question)","aen":"(Shows technical curiosity)","cw":"技術スタック → ぎじゅつすたっく; tech スタック common","rw":"使用技術・技術構成・フレームワーク","mh":"TECH STACK = gijutsu sutakku. Great reverse question topic"},{"r":95,"j":"採用方針","ro":"saiyou houshin","fs":"さいようほうしん→さいようほーしん","en":"Hiring policy / Recruitment policy","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"H. Company & Info Session","qt":"HIRING","ij":"弊社の採用方針についてご説明します。","iro":"Heisha no saiyou houshin ni tsuite go setsumei shimasu.","ien":"I will explain our company's hiring policy.","aj":"(INFO SESSION - company explaining how they hire. Listen for what they value in candidates)","aro":"(Company explaining their criteria)","aen":"(Listen for what qualities they prioritize)","cw":"採用方針 → さいようほーしん at speed","rw":"採用基準・求める人材・人材要件","mh":"HIRING POLICY = saiyou houshin. What they say here = what they want from you"},{"r":96,"j":"御社","ro":"onsha","fs":"おんしゃ(same)","en":"Your company (honorific)","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"H. Company & Info Session","qt":"FORMAL REFERENCE","ij":"御社の強みはどこだと思いますか？","iro":"Onsha no tsuyomi wa doko da to omoimasu ka?","ien":"What do you think is your company's strength?","aj":"御社の強みは、AIへの継続的な投資と経験豊富なエンジニアチームだと思います。その環境で成長させていただきたいです。","aro":"Onsha no tsuyomi wa, AI he no keizokuteki na toushi to keiken yutaka na enjinia chiimu da to omoimasu. Sono kankyou de seichou sasete itadakitai desu.","aen":"I think your company's strength is its continuous investment in AI and its experienced engineering team. I would like to grow in that environment.","cw":"御社 = YOUR company (their company); 弊社 = MY company (your company)","rw":"貴社・御社・先方の会社","mh":"THEIR COMPANY (polite) = onsha. YOU use this when referring to THEM"},{"r":97,"j":"弊社","ro":"heisha","fs":"へいしゃ(same)","en":"Our company (humble)","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"H. Company & Info Session","qt":"FORMAL REFERENCE","ij":"弊社についてどのような印象をお持ちですか？","iro":"Heisha ni tsuite dono you na inshou o omochi desu ka?","ien":"What impression do you have of our company?","aj":"(WHEN INTERVIEWER says 弊社, they mean THEIR company. Listen for what follows about the company)","aro":"(Interviewer referring to their own company)","aen":"(Listen for what company info follows)","cw":"弊社 = OUR company (interviewer's); 御社 = YOUR company (you say this)","rw":"自社・当社・わが社","mh":"THEIR COMPANY (humble) = heisha. When THEY say it, they mean themselves"},{"r":98,"j":"説明会","ro":"setsumeikai","fs":"せつめいかい→せつめーかい","en":"Information session / Briefing","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"H. Company & Info Session","qt":"INFO SESSION","ij":"先日の説明会はいかがでしたか？","iro":"Senjitsu no setsumeikai wa ikaga deshita ka?","ien":"How was the information session the other day?","aj":"非常に参考になりました。御社のAI開発の取り組みについて理解が深まり、ますます志望度が高まりました。","aro":"Hijou ni sankou ni narimashita. Onsha no AI kaihatsu no torikumi ni tsuite rikai ga fukamari, masumasu shibou do ga takamari mashita.","aen":"It was very helpful. My understanding of your company's AI development efforts deepened, and my desire to join your company increased further.","cw":"説明会 → せつめーかい fast; company info session","rw":"会社説明会・就職説明会・企業説明","mh":"INFO SESSION = setsumeikai"},{"r":99,"j":"将来の目標","ro":"shourai no mokuhyou","fs":"しょうらいのもくひょう→しょーらいのもくひょ","en":"Future goals","pos":"Phrase","jlpt":"N4","pl":"MUST KNOW","cat":"I. Career & Future Goals","qt":"GOALS","ij":"将来の目標について教えてください。","iro":"Shourai no mokuhyou ni tsuite oshiete kudasai.","ien":"Please tell me about your future goals.","aj":"将来の目標は、AIエンジニアとして社会に役立つシステムを開発することです。特に障害者支援や医療分野でAI技術を活用したいと考えています。","aro":"Shourai no mokuhyou wa, AI enjinia to shite shakai ni yakudatsu shisutemu o kaihatsu suru koto desu. Toku ni shougaisha shien ya iryou bun'ya de AI gijutsu o katsuyo shitai to kangaete imasu.","aen":"My future goal is to develop systems useful to society as an AI engineer. In particular, I want to utilize AI technology in the fields of disability support and medicine.","cw":"将来の目標 → しょーらいのもくひょ fast","rw":"目標・夢・キャリアビジョン","mh":"FUTURE GOALS = shourai no mokuhyou"},{"r":100,"j":"3年後","ro":"san nen go","fs":"さんねんご→さんねんご","en":"3 years from now","pos":"Time Expression","jlpt":"N4","pl":"MUST KNOW","cat":"I. Career & Future Goals","qt":"SHORT-TERM GOALS","ij":"3年後の自分はどうなっていたいですか？","iro":"San nen go no jibun wa dou natte itai desu ka?","ien":"What do you want to be like 3 years from now?","aj":"3年後には、御社の技術スタックを完全に習得し、中心的なエンジニアメンバーとして製品開発に貢献できる状態になりたいです。また、日本語もビジネスレベルに引き上げたいです。","aro":"San nen go ni wa, onsha no gijutsu sutakku o kanzen ni shuutoku shi, chuushinteki na enjinia menbaa to shite seihin kaihatsu ni kouken dekiru joutai ni naritai desu. Mata, nihongo mo bijinesu reberu ni hikiagetai desu.","aen":"In 3 years, I want to have fully mastered your company's technology stack and be in a state where I can contribute to product development as a central engineering team member. I also want to bring my Japanese up to business level.","cw":"3年後 → さんねんご; 五年後 gonen go = 5 years","rw":"中期目標・短期目標・近い将来","mh":"3 YEARS FROM NOW = san nen go. Short-term goal question"},{"r":101,"j":"スペシャリスト","ro":"supesharisuto","fs":"すぺしゃりすと→すぺしゃりすと","en":"Specialist / Expert","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"I. Career & Future Goals","qt":"CAREER TYPE","ij":"スペシャリストとジェネラリスト、どちらを目指したいですか？","iro":"Supesharisuto to jeneraarisuto, dochira o mezashitai desu ka?","ien":"Do you want to aim for specialist or generalist?","aj":"まずはAI技術のスペシャリストとして深く専門性を磨きたいです。そのうえで、チームを率いるために必要なジェネラリスト的なスキルも身につけていきたいと考えています。","aro":"Mazu wa AI gijutsu no supesharisuto to shite fukaku senmonsei o migakitai desu. Sono ue de, chiimu o hikiru tame ni hitsuyou na jeneraarisuto teki na sukiru mo mi ni tsukete ikitai to kangaete imasu.","aen":"First I want to deeply develop my expertise as an AI technology specialist. Building on that, I also want to acquire generalist skills necessary for leading a team.","cw":"スペシャリスト → すぺしゃりすと; English loanword","rw":"専門家・エキスパート・ゼネラリスト","mh":"SPECIALIST = supesharisuto"},{"r":102,"j":"成長環境","ro":"seichou kankyou","fs":"せいちょうかんきょう→せいちょーかんきょー","en":"Growth environment","pos":"Noun Phrase","jlpt":"N3","pl":"VERY IMPORTANT","cat":"I. Career & Future Goals","qt":"COMPANY CHOICE","ij":"どのような成長環境を求めていますか？","iro":"Dono you na seichou kankyou o motomete imasu ka?","ien":"What kind of growth environment are you looking for?","aj":"最新のAI技術に触れながら、経験豊富なエンジニアから学べる環境を求めています。また、失敗を恐れずに挑戦できる文化も大切にしています。","aro":"Saishin no AI gijutsu ni furenagara, keiken yutaka na enjinia kara manaberu kankyou o motomete imasu. Mata, shippai o osorezu ni chousen dekiru bunka mo taisetsu ni shite imasu.","aen":"I am looking for an environment where I can learn from experienced engineers while having access to the latest AI technology. I also value a culture where I can challenge without fear of failure.","cw":"成長環境 → せいちょーかんきょー fast","rw":"学習環境・育成環境・キャリア開発","mh":"GROWTH ENVIRONMENT = seichou kankyou"},{"r":103,"j":"就職活動","ro":"shuushoku katsudou","fs":"しゅうしょくかつどう→しゅーかつ","en":"Job hunting activities","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"I. Career & Future Goals","qt":"JOB HUNTING","ij":"就職活動の状況はいかがですか？","iro":"Shuushoku katsudou no joukyou wa ikaga desu ka?","ien":"How is your job hunting going?","aj":"現在、IT企業を中心に選考を受けています。御社は特に第一志望として、力を入れて準備しています。","aro":"Genzai, IT kigyou o chushin ni senko o ukete imasu. Onsha wa toku ni daiichi shibou to shite, chikara o irete junbi shite imasu.","aen":"Currently, I am going through the selection process mainly at IT companies. I am especially preparing hard for your company as my first choice.","cw":"就職活動 → しゅーかつ very common abbreviation","rw":"就活・転職活動・採用活動","mh":"JOB HUNTING = shuushoku katsudou → しゅーかつ (very common abbreviation)"},{"r":104,"j":"機械学習","ro":"kikai gakushuu","fs":"きかいがくしゅう→きかいがくしゅー","en":"Machine learning","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"J. Technical AI/ML","qt":"TECHNICAL","ij":"機械学習の経験はどのくらいありますか？","iro":"Kikai gakushuu no keiken wa dono kurai arimasu ka?","ien":"How much experience do you have with machine learning?","aj":"大学院の研究でTransformerを中心とした機械学習モデルの開発・実装を行っています。また、Kaggleのコースも修了し、実践的な機械学習スキルを身につけています。","aro":"Daigakuin no kenkyuu de Transformer o chuushin to shita kikai gakushuu moderu no kaihatsu, jissou o okonatte imasu. Mata, Kaggle no koosu mo shuuryou shi, jissanteki na kikai gakushuu sukiru o mi ni tsukete imasu.","aen":"In my graduate research, I am developing and implementing machine learning models centered on Transformers. I have also completed Kaggle courses and acquired practical machine learning skills.","cw":"機械学習 → きかいがくしゅー fast; マシンラーニング also used","rw":"深層学習・AI・モデル","mh":"MACHINE LEARNING = kikai gakushuu"},{"r":105,"j":"深層学習","ro":"shinsou gakushuu","fs":"しんそうがくしゅう→しんそーがくしゅー","en":"Deep learning","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"J. Technical AI/ML","qt":"TECHNICAL","ij":"深層学習の実装経験を教えてください。","iro":"Shinsou gakushuu no jissou keiken o oshiete kudasai.","ien":"Please tell me your deep learning implementation experience.","aj":"PyTorchを使ってTransformerエンコーダを実装しました。また、LSTMやCNNとの精度比較も行っており、各モデルの特性と適用場面を理解しています。","aro":"PyTorch o tsukatte Transformer enkoodaa o jissou shimashita. Mata, LSTM ya CNN to no seido hikaku mo okonatte ori, kaku moderu no tokusei to tekiyou bamen o rikai shite imasu.","aen":"I implemented a Transformer encoder using PyTorch. I have also conducted accuracy comparisons with LSTM and CNN, and understand the characteristics and application scenarios of each model.","cw":"深層学習 → しんそーがくしゅー; ディープラーニング also used","rw":"ニューラルネット・AI・機械学習","mh":"DEEP LEARNING = shinsou gakushuu"},{"r":106,"j":"自然言語処理","ro":"shizen gengo shori","fs":"しぜんげんごしょり→しぜんげんごしょり","en":"Natural language processing (NLP)","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"J. Technical AI/ML","qt":"TECHNICAL","ij":"NLPの経験はありますか？","iro":"NLP no keiken wa arimasu ka?","ien":"Do you have NLP experience?","aj":"IBM SkillsBuildのNLPコースを修了し、基礎的な知識を身につけています。また、Transformerはもともとこのような言語処理タスクのために開発されたモデルのため、NLPとの関連性も深く理解しています。","aro":"IBM SkillsBuild no NLP koosu o shuuryou shi, kisoteki na chishiki o mi ni tsukete imasu. Mata, Transformer wa moto moto kono you na gengo shori tasuku no tame ni kaihatsu sareta moderu no tame, NLP to no kanrensei mo fukaku rikai shite imasu.","aen":"I have completed IBM SkillsBuild's NLP course and acquired foundational knowledge. Also, since the Transformer was originally developed for such language processing tasks, I also have a deep understanding of its connection to NLP.","cw":"自然言語処理 → NLP in IT contexts; しぜんげんごしょり","rw":"NLP・テキスト処理・言語AI","mh":"NLP = shizen gengo shori"},{"r":107,"j":"コンピュータビジョン","ro":"konpyuuta bijon","fs":"こんぴゅーたびじょん(same)","en":"Computer vision","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"J. Technical AI/ML","qt":"TECHNICAL","ij":"コンピュータビジョンの経験はありますか？","iro":"Konpyuuta bijon no keiken wa arimasu ka?","ien":"Do you have computer vision experience?","aj":"IBM SkillsBuildのコンピュータビジョンコースを修了し、また手話認識の研究でも手の形状認識という視覚的なタスクに取り組んでいます。","aro":"IBM SkillsBuild no konpyuuta bijon koosu o shuuryou shi, mata shuwa ninshiki no kenkyuu de mo te no keitai ninshiki to iu shikakuteki na tasuku ni torikunde imasu.","aen":"I have completed IBM SkillsBuild's computer vision course, and in my sign language recognition research I am also working on the visual task of hand shape recognition.","cw":"コンピュータビジョン → CV in IT contexts","rw":"CV・画像処理・画像認識","mh":"COMPUTER VISION = konpyuuta bijon"},{"r":108,"j":"フレームワーク","ro":"furēmuwāku","fs":"ふれーむわーく(same)","en":"Framework","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"J. Technical AI/ML","qt":"TECHNICAL","ij":"どのフレームワークを得意としていますか？","iro":"Dono furēmuwāku o tokui to shite imasu ka?","ien":"Which framework are you skilled at?","aj":"主にPyTorchを使っています。深層学習モデルの開発と実装に使用しており、TransformerやLSTMなどのモデルを実装した経験があります。","aro":"Omo ni PyTorch o tsukatte imasu. Shinsou gakushuu moderu no kaihatsu to jissou ni shiyou shite ori, Transformer ya LSTM nado no moderu o jissou shita keiken ga arimasu.","aen":"I mainly use PyTorch. I use it for developing and implementing deep learning models, and have experience implementing models such as Transformer and LSTM.","cw":"フレームワーク → ふれーむわーく; same","rw":"ライブラリー・ツール・技術","mh":"FRAMEWORK = furēmuwāku"},{"r":109,"j":"バージョン管理","ro":"ba-jon kanri","fs":"ばーじょんかんり→ばーじょんかんり","en":"Version control","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"J. Technical AI/ML","qt":"TECHNICAL","ij":"Gitなどのバージョン管理ツールは使えますか？","iro":"Git nado no ba-jon kanri tsuuru wa tsukaemasu ka?","ien":"Can you use version control tools such as Git?","aj":"はい、GitとGitHubを使ったコード管理の経験があります。研究コードの管理だけでなく、インターンでもチーム開発でGitを活用しました。","aro":"Hai, Git to GitHub o tsukatta koodo kanri no keiken ga arimasu. Kenkyuu koodo no kanri dake de naku, intaan de mo chiimu kaihatsu de Git o katsuyou shimashita.","aen":"Yes, I have experience in code management using Git and GitHub. Not only for managing research code, but I also utilized Git in team development during internships.","cw":"バージョン管理 → ばーじょんかんり; Git, GitHub common","rw":"Git・ソースコード管理・コード管理","mh":"VERSION CONTROL = ba-jon kanri"},{"r":110,"j":"アジャイル開発","ro":"ajairу kaihatsu","fs":"あじゃいるかいはつ→あじゃいるかいはつ","en":"Agile development","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"J. Technical AI/ML","qt":"TECHNICAL","ij":"アジャイル開発の経験はありますか？","iro":"Ajairu kaihatsu no keiken wa arimasu ka?","ien":"Do you have experience with agile development?","aj":"直接的なアジャイル開発の経験はまだありませんが、基本的な概念は理解しています。チームでの迅速なイテレーションと継続的改善の重要性は研究活動でも実感しています。","aro":"Chokusetsu teki na ajairu kaihatsu no keiken wa mada arimasen ga, kisoteki na gainen wa rikai shite imasu. Chiimu de no jinsoku na ite-reshon to keizokuteki kaizen no juuyousei wa kenkyuu katsudou de mo jikkan shite imasu.","aen":"I do not yet have direct agile development experience, but I understand the basic concepts. I have realized the importance of rapid team iteration and continuous improvement in my research activities as well.","cw":"アジャイル開発 → あじゃいるかいはつ; スクラム Scrum common","rw":"スクラム・スプリント・アジャイル","mh":"AGILE = ajairu kaihatsu"},{"r":111,"j":"クラウド","ro":"kuraudo","fs":"くらうど(same)","en":"Cloud (computing)","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"J. Technical AI/ML","qt":"TECHNICAL","ij":"クラウドサービスの利用経験はありますか？","iro":"Kuraudo saabisu no riyou keiken wa arimasu ka?","ien":"Do you have experience using cloud services?","aj":"現在は主にローカル環境で研究を進めていますが、クラウドサービス（AWS、GCPなど）の基礎知識は持っており、今後の研究拡張に活用したいと考えています。","aro":"Genzai wa omo ni rookaru kankyou de kenkyuu o susumete imasu ga, kuraudo saabisu (AWS, GCP nado) no kiso chishiki wa motte ori, kongo no kenkyuu kakuchou ni katsuyo shitai to kangaete imasu.","aen":"Currently I am mainly advancing my research in a local environment, but I have foundational knowledge of cloud services (AWS, GCP, etc.) and want to utilize them for future research expansion.","cw":"クラウド → くらうど; AWS, GCP, Azure are the main ones","rw":"AWS・GCP・Azure・クラウド環境","mh":"CLOUD = kuraudo"},{"r":112,"j":"データ前処理","ro":"deeta zen shori","fs":"でーたぜんしょり→でーたぜんしょり","en":"Data preprocessing","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"J. Technical AI/ML","qt":"TECHNICAL","ij":"データ前処理はどのように行いましたか？","iro":"Deeta zen shori wa dono you ni okonaimashita ka?","ien":"How did you perform data preprocessing?","aj":"センサデータの正規化、ノイズ除去、そして欠損値の補完を行いました。特にノイズ処理が最も重要で、フィルタリングアルゴリズムの選択に多くの時間をかけました。","aro":"Sensa deeta no seikika, noizu jokyo, soshite kekuzon chi no hokan o okonaimashita. Toku ni noizu shori ga mottomo juuyou de, firutaringu arugorizumu no sentaku ni ooku no jikan o kakemashita.","aen":"I performed sensor data normalization, noise removal, and missing value interpolation. Noise processing was particularly important, and I spent a lot of time on selecting filtering algorithms.","cw":"データ前処理 → でーたぜんしょり; 前処理 alone also used","rw":"前処理・クレンジング・データ整形","mh":"DATA PREPROCESSING = deeta zen shori"},{"r":113,"j":"残業","ro":"zangyou","fs":"ざんぎょう→ざんぎょ","en":"Overtime","pos":"Noun","jlpt":"N4","pl":"MUST KNOW","cat":"K. Practical & Logistics","qt":"WORK CONDITIONS","ij":"残業についてはいかがでしょうか？","iro":"Zangyou ni tsuite wa ikaga deshou ka?","ien":"What about overtime?","aj":"必要な場合はもちろん対応できます。ただし、効率よく仕事を進めて通常の時間内に終えられるよう努力する姿勢も大切にしています。","aro":"Hitsuyou na baai wa mochiron taiou dekimasu. Tada shi, kouritsu yoku shigoto o susumete tsuujou no jikan nai ni oereru you doryoku suru shisei mo taisetsu ni shite imasu.","aen":"Of course I can handle it when necessary. However, I also value the attitude of working efficiently and striving to finish within normal hours.","cw":"残業 → ざんぎょ fast; sensitive question in Japan","rw":"時間外勤務・超過勤務・残業代","mh":"OVERTIME = zangyou"},{"r":114,"j":"転勤","ro":"tenkin","fs":"てんきん(same)","en":"Job transfer / Relocation","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"K. Practical & Logistics","qt":"WORK CONDITIONS","ij":"転勤は可能ですか？","iro":"Tenkin wa kanou desu ka?","ien":"Is relocation possible?","aj":"はい、基本的には対応可能です。ただし、特定の事情がある場合は事前にご相談できればと思います。","aro":"Hai, kisoteki ni wa taiou kanou desu. Tada shi, tokutei no jijou ga aru baai wa jizen ni go soudan dekireba to omoimasu.","aen":"Yes, in principle it is possible. However, if there are specific circumstances, I hope we can discuss them in advance.","cw":"転勤 → てんきん; important question at large Japanese companies","rw":"引っ越し・異動・配置転換","mh":"RELOCATION = tenkin"},{"r":115,"j":"いつから働けますか","ro":"itsu kara hatarakemasu ka","fs":"いつからはたらけますかーいつはたらける？","en":"When can you start working?","pos":"Question Phrase","jlpt":"N4","pl":"MUST KNOW","cat":"K. Practical & Logistics","qt":"START DATE","ij":"いつから働いていただけますか？","iro":"Itsu kara hataraite itadakemasu ka?","ien":"When can you start working?","aj":"2027年4月から働けます。修士課程の修了予定が2027年3月ですので、翌月から勤務開始できます。","aro":"2027 nen shigatsu kara hatarakemasu. Shuushi katei no shuuryou yotei ga 2027 nen sangatsu desu no de, yokugetu kara kinmu kaishi dekimasu.","aen":"I can start working from April 2027. My master's program is scheduled to end in March 2027, so I can start work the following month.","cw":"いつから働けますか → いつはたらける？ casual","rw":"入社可能日・就業開始日","mh":"WHEN CAN YOU START = itsu kara hatarakemasu ka"},{"r":116,"j":"他社の選考状況","ro":"tasha no senkou joukyou","fs":"たしゃのせんこうじょうきょう→たしゃのせんこー","en":"Status at other companies","pos":"Phrase","jlpt":"N3","pl":"VERY IMPORTANT","cat":"K. Practical & Logistics","qt":"JOB HUNTING STATUS","ij":"他社の選考状況はいかがですか？","iro":"Tasha no senkou joukyou wa ikaga desu ka?","ien":"How is the selection status at other companies?","aj":"現在、複数のIT企業の選考に参加していますが、御社が第一志望です。","aro":"Genzai, fukusuu no IT kigyou no senko ni sanka shite imasu ga, onsha ga daiichi shibou desu.","aen":"Currently I am participating in the selection process at multiple IT companies, but your company is my first choice.","cw":"他社の選考状況 → たしゃのせんこー fast","rw":"就活状況・選考・面接状況","mh":"OTHER COMPANIES STATUS = tasha no senkou joukyou"},{"r":117,"j":"内定","ro":"naitei","fs":"ないてい(same)","en":"Job offer / Informal job offer","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"K. Practical & Logistics","qt":"JOB OFFER","ij":"現在内定をいただいている企業はありますか？","iro":"Genzai naitei o itadaite iru kigyou wa arimasu ka?","ien":"Are there any companies from which you have already received a job offer?","aj":"現時点ではまだ内定はいただいていませんが、いくつかの企業で選考が進んでいる状況です。","aro":"Genjiten de wa mada naitei wa itadaite imasen ga, ikutsuka no kigyou de senko ga susunde iru joukyou desu.","aen":"At this point I have not yet received any job offers, but I am in the process of advancing in the selection at several companies.","cw":"内定 → ないてい; 内定をもらう = to receive an offer","rw":"採用・オファー・就職決定","mh":"JOB OFFER = naitei"},{"r":118,"j":"就職軸","ro":"shuushoku jiku","fs":"しゅうしょくじく→しゅーしょくじく","en":"Job selection criteria / What you prioritize","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"K. Practical & Logistics","qt":"JOB PRIORITIES","ij":"就職活動においての軸は何ですか？","iro":"Shuushoku katsudou ni oite no jiku wa nan desu ka?","ien":"What are your criteria in your job hunting?","aj":"就職軸は3つあります。1つ目はAI技術への継続的な投資、2つ目は成長を支える研修制度、3つ目はグローバルな環境です。御社はこの3つすべてを備えていると感じています。","aro":"Shuushoku jiku wa mittsu arimasu. Hitotsu me wa AI gijutsu he no keizokuteki na toushi, futatsu me wa seichou o sasaeru kenshuu seido, mittsu me wa guroobaroru na kankyou desu. Onsha wa kono mittsu subete o sonaete iru to kanjite imasu.","aen":"I have 3 job selection criteria. The first is continuous investment in AI technology, the second is a training system that supports growth, and the third is a global environment. I feel that your company has all 3.","cw":"就職軸 → しゅーしょくじく fast","rw":"選択基準・重視すること・優先順位","mh":"JOB CRITERIA = shuushoku jiku"},{"r":119,"j":"日本語能力","ro":"nihongo nouryoku","fs":"にほんごのうりょく→にほんごのーりょく","en":"Japanese language ability","pos":"Noun Phrase","jlpt":"N3","pl":"MUST KNOW","cat":"L. Foreign Candidate","qt":"JAPANESE ABILITY","ij":"日本語能力についてお聞かせください。","iro":"Nihongo nouryoku ni tsuite okikasete kudasai.","ien":"Please tell me about your Japanese language ability.","aj":"JLPT N5を取得しており、日常会話はN3レベル程度で行えます。現在は毎日勉強を続けており、ビジネスレベルを目指して積極的に取り組んでいます。","aro":"JLPT N5 o shutoku shite ori, nichijou kaiwa wa N3 reberu teido de okonaemasu. Genzai wa mainichi benkyou o tsuzukete ori, bijinesu reberu o mezashite sekkyokuteki ni torikunde imasu.","aen":"I have obtained JLPT N5, and can conduct daily conversations at approximately N3 level. I am currently continuing to study every day and am actively working toward business level.","cw":"日本語能力 → にほんごのーりょく fast","rw":"日本語レベル・JLPT・語学力","mh":"JAPANESE ABILITY = nihongo nouryoku"},{"r":120,"j":"在留資格","ro":"zairyuu shikaku","fs":"ざいりゅうしかく→ざいりゅーしかく","en":"Residence status / Visa type","pos":"Noun","jlpt":"N3","pl":"MUST KNOW","cat":"L. Foreign Candidate","qt":"VISA","ij":"現在の在留資格を教えていただけますか？","iro":"Genzai no zairyuu shikaku o oshiete itadakemasu ka?","ien":"Could you tell me your current residence status?","aj":"現在は留学ビザで在日しています。就職が決まった後は、就労ビザへの切り替えを予定しています。","aro":"Genzai wa ryuugaku biza de zainnichi shite imasu. Shuushoku ga kimatta nochi wa, shuurou biza he no kirikae o yotei shite imasu.","aen":"I am currently in Japan on a student visa. After securing employment, I plan to switch to a work visa.","cw":"在留資格 → ざいりゅーしかく fast; ビザ biza also used","rw":"ビザ・就労資格・在留","mh":"RESIDENCE STATUS = zairyuu shikaku"},{"r":121,"j":"文化の違い","ro":"bunka no chigai","fs":"ぶんかのちがい→ぶんかのちがい","en":"Cultural differences","pos":"Phrase","jlpt":"N3","pl":"VERY IMPORTANT","cat":"L. Foreign Candidate","qt":"CULTURAL ADAPTATION","ij":"日本と出身国の文化の違いで困ったことはありますか？","iro":"Nihon to shusshin koku no bunka no chigai de komatta koto wa arimasu ka?","ien":"Have you had any difficulties with cultural differences between Japan and your home country?","aj":"最初は日本のコミュニケーションスタイルの間接性に戸惑いましたが、現在は相手の意図を読み取ることを楽しんでいます。異文化理解は私の強みでもあります。","aro":"Saisho wa Nihon no komyunike-shon sutairu no kansetsuteki na tokoro ni tomadoimashita ga, genzai wa aite no ito o yomitoru koto o tanoshinde imasu. Ibunka rikai wa watashi no tsuyomi de mo arimasu.","aen":"At first I was confused by the indirectness of Japan's communication style, but now I enjoy reading the other person's intentions. Cross-cultural understanding is also one of my strengths.","cw":"文化の違い → ぶんかのちがい; 文化差 bunka sa also used","rw":"異文化・カルチャーショック・適応","mh":"CULTURAL DIFFERENCES = bunka no chigai"},{"r":122,"j":"適応力","ro":"tekiou ryoku","fs":"てきおうりょく→てきおーりょく","en":"Adaptability","pos":"Noun","jlpt":"N3","pl":"VERY IMPORTANT","cat":"L. Foreign Candidate","qt":"ADAPTATION","ij":"日本の環境への適応力はありますか？","iro":"Nihon no kankyou he no tekiou ryoku wa arimasu ka?","ien":"Do you have adaptability to the Japanese environment?","aj":"はい。インドから日本に来て、言語・文化・気候すべてが異なる環境に適応してきました。会津大学でのTA業務では、日本人学生と日本語でコミュニケーションを取る経験も積んでいます。","aro":"Hai. Indo kara Nihon ni kite, gengo, bunka, kikou subete ga kotonaru kankyou ni tekiou shite kimashita. Aizu Daigaku de no TA gyoumu de wa, Nihonjin gakusei to nihongo de komyunike-shon o toru keiken mo tsunde imasu.","aen":"Yes. Coming from India to Japan, I have adapted to an environment where language, culture, and climate are all different. In my TA duties at the University of Aizu, I have also accumulated experience communicating with Japanese students in Japanese.","cw":"適応力 → てきおーりょく fast","rw":"適応する・順応力・フレキシビリティ","mh":"ADAPTABILITY = tekiou ryoku"},{"r":200,"j":"ている → てる","ro":"te-iru → te-ru","fs":"てる","en":"Currently doing (progressive form)","pos":"Grammar Contraction","jlpt":"N4","pl":"MUST KNOW","cat":"M. Contractions","qt":"VERB FORM","ij":"今どんな研究をされていますか？→ 今どんな研究されてますか？","iro":"Ima donna kenkyuu o sarete imasu ka?","ien":"What research are you doing now?","aj":"触覚センサを使った手話認識AIの研究をしています。","aro":"Shokkaku sensa o tsukatta shuwa ninshiki AI no kenkyuu o shite imasu.","aen":"I am doing research on sign language recognition AI using tactile sensors.","cw":"している → してる; 研究しています → 研究してます","rw":"ていた→てた・ていない→てない","mh":"している→してる. DROP the い. Most common contraction"},{"r":201,"j":"ていた → てた","ro":"te-ita → te-ta","fs":"てた","en":"Was doing (past progressive)","pos":"Grammar Contraction","jlpt":"N4","pl":"MUST KNOW","cat":"M. Contractions","qt":"VERB FORM","ij":"インターンでどんな仕事をしていたんですか？→ インターンどんなことしてたんですか？","iro":"Intaan de donna shigoto o shite ita n desu ka?","ien":"What kind of work were you doing at the internship?","aj":"APIの検証業務をしていました。","aro":"API no kenshou gyoumu o shite imashita.","aen":"I was doing API verification work.","cw":"していた → してた; 担当していた → 担当してた","rw":"ていた・していた・過去進行","mh":"していた→してた. DROP い again"},{"r":202,"j":"んですけれども → んすけど","ro":"n desu keredomo → n su ke do","fs":"んすけど","en":"But / However (polite softener)","pos":"Grammar Contraction","jlpt":"N3","pl":"MUST KNOW","cat":"M. Contractions","qt":"SENTENCE ENDING","ij":"難しかったんですけれども、改善できました。→ 難しかったんすけど、なんとかなりました。","iro":"Muzukashikatta n desu keredomo, kaizen dekimashita.","ien":"It was difficult, but I was able to improve it.","aj":"(This contraction means contrast/softener is coming - wait for what follows)","aro":"(Listen for what comes after)","aen":"(The key info is AFTER this)","cw":"んですけれども→んすけど→んすけ at maximum speed","rw":"ですが・けれど・でも","mh":"MOST IMPORTANT CONTRACTION: んですけれども→んすけど"},{"r":203,"j":"させていただいております → させてもらってます","ro":"sasete itadaite orimasu → sasete moratte masu","fs":"させてもらってます","en":"Humbly doing (keigo)","pos":"Grammar Contraction","jlpt":"N2","pl":"MUST KNOW","cat":"M. Contractions","qt":"POLITE FORM","ij":"現在、研究をさせていただいております。→ 今、研究させてもらってます。","iro":"Genzai, kenkyuu o sasete itadaite orimasu.","ien":"I am currently humbly engaged in research.","aj":"(When interviewer says this formal form, they're just saying they ARE DOING something professionally)","aro":"(Humble formal: I'm doing X)","aen":"(Very common in business Japanese)","cw":"させていただいております → させてもらってます → さしてもらってます at speed","rw":"〜しています・担当しております","mh":"HUMBLE PROGRESSIVE: させていただいております sounds like させてもらってます"},{"r":204,"j":"ということで → っちゅーことで","ro":"to iu koto de → tchu-koto de","fs":"っちゅーことで","en":"So therefore / In conclusion","pos":"Connector","jlpt":"N3","pl":"MUST KNOW","cat":"M. Contractions","qt":"CONNECTOR","ij":"ということで、本日の面接はここまでにします。→ っちゅーことで、今日はここまでにしましょう。","iro":"To iu koto de, honjitsu no mensetsu wa koko made ni shimasu.","ien":"So therefore, we will end today's interview here.","aj":"(When you hear this, the speaker is wrapping up a point or the session)","aro":"(Conclusion coming)","aen":"(Summary/ending signal)","cw":"ということで → っちゅーことで; very common at end of explanations","rw":"それで・したがって・以上で","mh":"CONCLUSION: ということで → っちゅーことで"},{"r":205,"j":"てしまう → ちゃう","ro":"te shimau → chau","fs":"ちゃう","en":"Ended up doing / Accidentally did","pos":"Grammar Contraction","jlpt":"N4","pl":"MUST KNOW","cat":"M. Contractions","qt":"VERB FORM","ij":"つい時間を使ってしまいます。→ ついつい時間使っちゃいます。","iro":"Tsui jikan o tsukatte shimaimasu.","ien":"I end up using time unintentionally.","aj":"(When used about mistakes or unintended actions - shows honesty about weaknesses)","aro":"(Accidental/unintended action)","aen":"(Signals something happened unexpectedly)","cw":"てしまう→ちゃう; してしまった→しちゃった","rw":"うっかり・思わず・ついつい","mh":"ENDED UP: てしまう→ちゃう"},{"r":206,"j":"それは → そりゃ","ro":"sore wa → sorya","fs":"そりゃ","en":"That is / That's (contracted)","pos":"Grammar Contraction","jlpt":"N3","pl":"VERY IMPORTANT","cat":"M. Contractions","qt":"CONNECTOR","ij":"それは大変でしたね。→ そりゃ大変でしたね。","iro":"Sore wa taihen deshita ne.","ien":"That was tough, wasn't it.","aj":"(When interviewer says this sympathetically - they understand your difficulty)","aro":"(Empathy/acknowledgment)","aen":"(Interviewer agrees with your struggle)","cw":"それは→そりゃ; これは→こりゃ same pattern","rw":"それは・それって・その","mh":"THAT IS: それは→そりゃ at native speed"},{"r":207,"j":"どのように → どうやって","ro":"dono you ni → dou yatte","fs":"どーやって","en":"How / In what way","pos":"Question Contraction","jlpt":"N3","pl":"MUST KNOW","cat":"M. Contractions","qt":"QUESTION WORD","ij":"どのようにして乗り越えましたか？→ どうやって乗り越えたんですか？","iro":"Dono you ni shite norikoremashita ka?","ien":"How did you overcome it?","aj":"(Question: HOW did you do it? Answer with your method/process)","aro":"(Method question)","aen":"(Asking for your process/approach)","cw":"どのように→どうやって→どって at fastest","rw":"方法・やり方・プロセス","mh":"HOW DID YOU = どのように→どうやって"},{"r":208,"j":"ておく → とく","ro":"te oku → to ku","fs":"とく","en":"Do in advance / Prepare","pos":"Grammar Contraction","jlpt":"N3","pl":"VERY IMPORTANT","cat":"M. Contractions","qt":"VERB FORM","ij":"入社前に勉強しておきます。→ 入社前に勉強しとく。","iro":"Nyuusha mae ni benkyou shite okimasu.","ien":"I will study in advance before joining.","aj":"(I have prepared / I will prepare - shows proactive thinking)","aro":"(Prepared in advance)","aen":"(Advance preparation shows initiative)","cw":"ておく→とく; しておく→しとく","rw":"準備する・事前に・あらかじめ","mh":"DO IN ADVANCE: ておく→とく"},{"r":209,"j":"ていただけますか → てもらえますか","ro":"te itadakemasu ka → te moraemasuka","fs":"てもらえますか","en":"Could you please (polite request)","pos":"Grammar Contraction","jlpt":"N3","pl":"MUST KNOW","cat":"M. Contractions","qt":"POLITE REQUEST","ij":"もう一度説明していただけますか？→ もう一度説明してもらえますか？","iro":"Mou ichido setsumei shite itadakemasu ka?","ien":"Could you please explain one more time?","aj":"(REQUEST - they are asking you to do something politely)","aro":"(Polite request to YOU)","aen":"(Please do X - be ready to comply)","cw":"ていただけますか→てもらえますか→てもらえます？ casual","rw":"お願いします・ください・してほしい","mh":"POLITE REQUEST: ていただけますか→てもらえますか"},{"r":210,"j":"なければいけない → なきゃいけない","ro":"nakereba ikenai → nakya ikenai","fs":"なきゃいけない","en":"Must do / Have to do","pos":"Grammar Contraction","jlpt":"N3","pl":"VERY IMPORTANT","cat":"M. Contractions","qt":"OBLIGATION","ij":"この点は改善しなければいけないと思います。→ この点はなんとかしなきゃいけないと思います。","iro":"Kono ten wa kaizen shinakereba ikenai to omoimasu.","ien":"I think this point must be improved.","aj":"(Self-reflection: showing awareness of what needs improvement - positive in interviews)","aro":"(Must/obligation statement)","aen":"(Shows awareness of what needs doing)","cw":"なければいけない→なきゃいけない→なきゃ alone at speed","rw":"必要がある・すべき・しないといけない","mh":"MUST DO: なければいけない→なきゃいけない"},{"r":211,"j":"研修制度について教えてください","ro":"kenshuu seido ni tsuite oshiete kudasai","fs":"Same","en":"Please tell me about the training system","pos":"Reverse Question","jlpt":"N3","pl":"MUST KNOW","cat":"N. Reverse Questions","qt":"REVERSE Q","ij":"(You ask this) 新人研修制度について教えていただけますか？","iro":"(You ask:) Shinjin kenshuu seido ni tsuite oshiete itadakemasu ka?","ien":"Could you tell me about the training system for new employees?","aj":"御社の新人研修は主にどのような内容でしょうか？特にエンジニアとしての技術習得を支援する制度に興味があります。","aro":"Onsha no shinjin kenshuu wa omo ni dono you na naiyou deshou ka? Toku ni enjinia to shite no gijutsu shuutoku o shien suru seido ni kyoumi ga arimasu.","aen":"What is the main content of your new employee training? I am particularly interested in systems that support technical skill acquisition as an engineer.","cw":"研修制度 → good first reverse question to show eagerness to grow","rw":"OJT・メンター・新人育成","mh":"TRAINING REVERSE Q: Always good to ask"},{"r":212,"j":"技術的な成長の機会","ro":"gijutsuteki na seichou no kikai","fs":"ぎじゅつてきなせいちょうのきかい","en":"Opportunities for technical growth","pos":"Phrase","jlpt":"N3","pl":"VERY IMPORTANT","cat":"N. Reverse Questions","qt":"REVERSE Q","ij":"(You ask) エンジニアとして技術的に成長するための機会はどのようなものがありますか？","iro":"(You ask:) Enjinia to shite gijutsuteki ni seichou suru tame no kikai wa dono you na mono ga arimasu ka?","ien":"What kind of opportunities are there for technical growth as an engineer?","aj":"勉強会や社外研修、資格取得支援などの制度があれば、ぜひ教えていただきたいです。","aro":"Benkyoukai ya shagai kenshuu, shikaku shutoku shien nado no seido ga areba, zehi oshiete itadakitai desu.","aen":"If there are systems such as study sessions, external training, and certification support, I would very much like to hear about them.","cw":"技術的な成長 → good reverse question for IT companies","rw":"スキルアップ・技術習得・成長機会","mh":"TECH GROWTH REVERSE Q"},{"r":213,"j":"チームの雰囲気","ro":"chiimu no fun'iki","fs":"ちーむのふんいき→ちーむのふんいき","en":"Team atmosphere","pos":"Phrase","jlpt":"N4","pl":"VERY IMPORTANT","cat":"N. Reverse Questions","qt":"REVERSE Q","ij":"(You ask) 実際にエンジニアチームの雰囲気はどのような感じですか？","iro":"(You ask:) Jissai ni enjinia chiimu no fun'iki wa dono you na kanji desu ka?","ien":"What is the actual atmosphere of the engineering team like?","aj":"チームでの技術共有や日常的なコミュニケーションの様子も教えていただけると嬉しいです。","aro":"Chiimu de no gijutsu kyouyuu ya nichijouteki na komyunike-shon no yousu mo oshiete itadakeru to ureshii desu.","aen":"I would be glad if you could also tell me about the technical sharing and everyday communication in the team.","cw":"チームの雰囲気 → shows you think about teamwork","rw":"職場の雰囲気・チームワーク・職場環境","mh":"TEAM ATMOSPHERE REVERSE Q"},{"r":214,"j":"活躍しているエンジニアの特徴","ro":"katsuyaku shite iru enjinia no tokuchou","fs":"Same","en":"Characteristics of successful engineers","pos":"Phrase","jlpt":"N3","pl":"VERY IMPORTANT","cat":"N. Reverse Questions","qt":"REVERSE Q","ij":"(You ask) 御社で特に活躍されているエンジニアの方には、どのような特徴がありますか？","iro":"(You ask:) Onsha de toku ni katsuyaku sarete iru enjinia no kata ni wa, dono you na tokuchou ga arimasu ka?","ien":"What are the characteristics of engineers who are especially successful at your company?","aj":"(This shows you want to understand their culture and adapt to it)","aro":"(Shows growth mindset)","aen":"(Shows you research what success looks like at the company)","cw":"活躍している → かつやくしている","rw":"成功するエンジニア・ハイパフォーマー","mh":"SUCCESSFUL ENGINEER CHARACTERISTICS - great reverse Q"}];
+
+// ═══════════════════════════════════════════════════════════
+// CATEGORY CONFIG
+// ═══════════════════════════════════════════════════════════
+const CAT_EMOJI = {
+  'A': '🎯', 'B': '🔇', 'C': '👤', 'D': '🔬', 'E': '💼', 'F': '📜',
+  'G': '🎭', 'H': '🏢', 'I': '🚀', 'J': '⚙️', 'K': '📋', 'L': '🌏', 'M': '⚡', 'N': '❓'
+};
+
+function getCatEmoji(cat) {
+  const letter = cat && cat.charAt(0);
+  return CAT_EMOJI[letter] || '📌';
+}
+
+function getCatShort(cat) {
+  if (!cat) return '';
+  const dot = cat.indexOf('.');
+  return dot >= 0 ? cat.substring(dot + 2) : cat;
+}
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let vocabData = [...VOCAB_DATA];
+let studyQueue = [];
+let studyDone = new Set();
+let studyAgainIds = [];
+let currentQueueIdx = 0;
+let currentCard = null;
+let isFlipped = false;
+let studyOrder = 'priority';
+let showRomaji = false;
+let selectedDeck = 'MUST KNOW';
+let selectedCategory = '';
+let sessionStartTime = null;
+let sessionEasyCount = 0;
+let sessionHardCount = 0;
+let sessionAgainCount = 0;
+let currentMode = 'study'; // 'study' | 'browse'
+let expandedBrowseRow = null;
+
+// ═══════════════════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+const screens = ['screen-welcome','screen-setup','screen-study','screen-complete','screen-browse'];
+
+function showScreen(id) {
+  screens.forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.classList.remove('active');
+  });
+  const target = document.getElementById(id);
+  if (target) target.classList.add('active');
+
+  const ratingArea = document.getElementById('rating-area');
+  if (id === 'screen-study') {
+    // shown when flipped
+  } else {
+    ratingArea.classList.remove('visible');
+  }
+}
+
+function goStudyMode() {
+  currentMode = 'study';
+  document.getElementById('nav-study').classList.add('active');
+  document.getElementById('nav-browse').classList.remove('active');
+  showScreen('screen-welcome');
+}
+
+function goBrowseMode() {
+  currentMode = 'browse';
+  document.getElementById('nav-browse').classList.add('active');
+  document.getElementById('nav-study').classList.remove('active');
+  document.getElementById('rating-area').classList.remove('visible');
+  showScreen('screen-browse');
+  initBrowse();
+}
+
+// ═══════════════════════════════════════════════════════════
+// WELCOME / SETUP
+// ═══════════════════════════════════════════════════════════
+function showSetup() {
+  currentMode = 'study';
+  document.getElementById('nav-study').classList.add('active');
+  document.getElementById('nav-browse').classList.remove('active');
+  initSetup();
+  checkContinueBanner();
+  showScreen('screen-setup');
+}
+
+function initSetup() {
+  const counts = {
+    'MUST KNOW': vocabData.filter(v => v.pl === 'MUST KNOW').length,
+    'VERY IMPORTANT': vocabData.filter(v => v.pl === 'VERY IMPORTANT').length,
+    'ALL': vocabData.length
+  };
+  document.getElementById('count-must').textContent = counts['MUST KNOW'];
+  document.getElementById('count-very').textContent = counts['VERY IMPORTANT'];
+  document.getElementById('count-all').textContent = counts['ALL'];
+
+  // Populate category dropdown
+  const cats = [...new Set(vocabData.map(v => v.cat))].sort();
+  const catSel = document.getElementById('category-dropdown');
+  catSel.innerHTML = '<option value="">-- Select Category --</option>';
+  cats.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = getCatEmoji(c) + ' ' + c;
+    catSel.appendChild(opt);
+  });
+
+  // Radio listeners
+  document.querySelectorAll('#deck-radio-group .radio-option').forEach(lbl => {
+    lbl.addEventListener('click', function() {
+      document.querySelectorAll('#deck-radio-group .radio-option').forEach(l => l.classList.remove('checked'));
+      this.classList.add('checked');
+      selectedDeck = this.dataset.val;
+      const catDrop = document.getElementById('category-dropdown');
+      catDrop.style.display = selectedDeck === 'CATEGORY' ? 'block' : 'none';
+      updateCatCount();
+    });
+  });
+
+  catSel.addEventListener('change', function() {
+    selectedCategory = this.value;
+    updateCatCount();
+  });
+}
+
+function updateCatCount() {
+  if (selectedDeck === 'CATEGORY' && selectedCategory) {
+    const n = vocabData.filter(v => v.cat === selectedCategory).length;
+    document.getElementById('count-cat').textContent = n;
+  } else {
+    document.getElementById('count-cat').textContent = '—';
+  }
+}
+
+function setOrder(o) {
+  studyOrder = o;
+  document.getElementById('order-priority').classList.toggle('active', o === 'priority');
+  document.getElementById('order-random').classList.toggle('active', o === 'random');
+}
+
+function setRomaji(val) {
+  showRomaji = val;
+  document.getElementById('romaji-yes').classList.toggle('active', val);
+  document.getElementById('romaji-no').classList.toggle('active', !val);
+  document.getElementById('setting-romaji').checked = val;
+}
+
+function checkContinueBanner() {
+  const saved = loadProgress();
+  const banner = document.getElementById('continue-banner');
+  if (saved) {
+    const age = Date.now() - saved.timestamp;
+    if (age < 24 * 60 * 60 * 1000) {
+      banner.style.display = 'flex';
+      const sub = document.getElementById('continue-banner-sub');
+      sub.textContent = `${saved.doneIds.length} done, ${saved.againIds.length} need review · ${new Date(saved.timestamp).toLocaleTimeString()}`;
+      return;
+    }
+  }
+  banner.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// STUDY SESSION
+// ═══════════════════════════════════════════════════════════
+function buildDeck() {
+  let cards;
+  if (selectedDeck === 'MUST KNOW') {
+    cards = vocabData.filter(v => v.pl === 'MUST KNOW');
+  } else if (selectedDeck === 'VERY IMPORTANT') {
+    cards = vocabData.filter(v => v.pl === 'VERY IMPORTANT');
+  } else if (selectedDeck === 'CATEGORY') {
+    cards = selectedCategory ? vocabData.filter(v => v.cat === selectedCategory) : vocabData;
+  } else {
+    cards = [...vocabData];
+  }
+
+  if (studyOrder === 'priority') {
+    cards = cards.slice().sort((a, b) => a.r - b.r);
+  } else {
+    cards = cards.slice().sort(() => Math.random() - 0.5);
+  }
+  return cards;
+}
+
+function startStudy() {
+  if (selectedDeck === 'CATEGORY' && !selectedCategory) {
+    alert('Please select a category first.');
+    return;
+  }
+  const deck = buildDeck();
+  studyQueue = deck.map((_, i) => i);
+  studyDone = new Set();
+  studyAgainIds = [];
+  currentQueueIdx = 0;
+  sessionStartTime = Date.now();
+  sessionEasyCount = 0;
+  sessionHardCount = 0;
+  sessionAgainCount = 0;
+  window._studyDeck = deck;
+  showScreen('screen-study');
+  renderCurrentCard();
+}
+
+function continueSession() {
+  const saved = loadProgress();
+  if (!saved) return;
+  // rebuild deck from saved
+  const deck = buildDeck();
+  window._studyDeck = deck;
+  studyDone = new Set(saved.doneIds);
+  studyAgainIds = saved.againIds || [];
+  // rebuild queue: cards not in done
+  studyQueue = deck.map((_, i) => i).filter(i => !studyDone.has(deck[i].r));
+  currentQueueIdx = 0;
+  sessionStartTime = Date.now();
+  sessionEasyCount = 0;
+  sessionHardCount = 0;
+  sessionAgainCount = 0;
+  showScreen('screen-study');
+  renderCurrentCard();
+}
+
+function renderCurrentCard() {
+  const deck = window._studyDeck;
+  if (!deck || currentQueueIdx >= studyQueue.length) {
+    endSession();
+    return;
+  }
+
+  const cardIdx = studyQueue[currentQueueIdx];
+  currentCard = deck[cardIdx];
+  isFlipped = false;
+
+  const cardInner = document.getElementById('card-inner');
+  cardInner.classList.remove('flipped');
+  document.getElementById('rating-area').classList.remove('visible');
+  document.getElementById('study-keyboard-hints').textContent = 'SPACE to flip · ← go back';
+
+  // Progress
+  const total = studyQueue.length + studyDone.size;
+  const pct = studyDone.size / Math.max(1, total) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('stat-pos').textContent = `Card ${currentQueueIdx + 1} of ${studyQueue.length}`;
+  document.getElementById('stat-done').textContent = `✅ Done: ${studyDone.size}`;
+  document.getElementById('stat-again').textContent = `🔁 Again: ${sessionAgainCount}`;
+
+  // Determine if contraction quiz mode
+  const isContractionQuiz = currentCard.cat === 'M. Contractions';
+
+  renderFront(currentCard, isContractionQuiz);
+  renderBack(currentCard, isContractionQuiz);
+
+  // Re-animate
+  const scene = document.getElementById('card-scene');
+  scene.style.animation = 'none';
+  scene.offsetHeight; // reflow
+  scene.style.animation = '';
+}
+
+function renderFront(card, isContractionQuiz) {
+  const front = document.getElementById('card-front');
+  const priorityClass = card.pl === 'MUST KNOW' ? 'pill-must' : card.pl === 'VERY IMPORTANT' ? 'pill-very' : 'pill-imp';
+  const priorityLabel = card.pl === 'MUST KNOW' ? '⭐ MUST KNOW' : card.pl === 'VERY IMPORTANT' ? '✅ VERY IMPORTANT' : '🔶 IMPORTANT';
+
+  let mainWord, subText, hint;
+  if (isContractionQuiz) {
+    mainWord = card.fs || card.j;
+    hint = `<div class="contraction-front-hint">⚡ Fast speech form — what is the standard form?</div>`;
+  } else {
+    mainWord = card.j;
+    hint = '';
+  }
+
+  const romajiHtml = (showRomaji && !isContractionQuiz)
+    ? `<div class="romaji-text">${esc(card.ro)}</div>` : '';
+
+  front.innerHTML = `
+    <div class="card-pills">
+      <span class="pill pill-cat">${getCatEmoji(card.cat)} ${esc(getCatShort(card.cat))}</span>
+      <span class="pill ${priorityClass}">${priorityLabel}</span>
+    </div>
+    <div class="jp-word">${esc(mainWord)}</div>
+    ${romajiHtml}
+    <span class="pill pill-pos" style="margin-top:4px">${esc(card.pos)}</span>
+    ${hint}
+    <div class="flip-hint">Tap to flip · or press SPACE</div>
+  `;
+}
+
+function renderBack(card, isContractionQuiz) {
+  const back = document.getElementById('card-back');
+  const isFillerCat = card.cat === 'B. Fillers & Connectors';
+
+  // Section 1: Meaning
+  let s1 = `<div class="back-section section-meaning">
+    <div class="section-label">📚 Meaning</div>`;
+
+  if (isContractionQuiz) {
+    s1 += `<div class="meaning-native">Standard: ${esc(card.j)}</div>`;
+    s1 += `<div style="font-size:16px;color:var(--text-secondary);margin-bottom:8px">Romaji: ${esc(card.ro)}</div>`;
+  } else {
+    s1 += `<div class="meaning-native">🎧 ${esc(card.fs || card.j)}</div>`;
+  }
+
+  s1 += `<div class="meaning-en">${esc(card.en)}</div>`;
+
+  if (card.mh) {
+    s1 += `<div class="memory-hook">💡 ${esc(card.mh)}</div>`;
+  }
+  if (card.cw) {
+    s1 += `<div class="contraction-watch">⚡ At Speed: ${esc(card.cw)}</div>`;
+  }
+  if (card.rw) {
+    s1 += `<div class="related-words">🔗 Related: ${esc(card.rw)}</div>`;
+  }
+  s1 += `</div>`;
+
+  // Section 2: Interviewer
+  let s2 = `<div class="back-section section-interviewer">
+    <div class="section-label">🎤 Interviewer Asks:</div>
+    <div class="sentence-jp">${esc(card.ij)}</div>
+    <div class="sentence-ro">${esc(card.iro)}</div>
+    <div class="sentence-en sentence-en-interviewer">${esc(card.ien)}</div>
+  </div>`;
+
+  // Section 3: Your Answer
+  let s3 = `<div class="back-section section-answer">
+    <div class="section-label">💬 Your Answer:</div>
+    <div class="sentence-jp">${esc(card.aj)}</div>
+    <div class="sentence-ro">${esc(card.aro)}</div>
+    <div class="sentence-en sentence-en-answer">${esc(card.aen)}</div>
+  </div>`;
+
+  const fillerWarning = isFillerCat
+    ? `<div class="filler-warning">⚠️ LISTENER WORD — focus on what comes AFTER it!</div>`
+    : '';
+
+  back.innerHTML = `<div class="expand-sections">${s1}${s2}${s3}</div>${fillerWarning}`;
+}
+
+function flipCard() {
+  if (!currentCard) return;
+  isFlipped = !isFlipped;
+  document.getElementById('card-inner').classList.toggle('flipped', isFlipped);
+  if (isFlipped) {
+    document.getElementById('rating-area').classList.add('visible');
+    document.getElementById('study-keyboard-hints').textContent = '1=Again · 2=Hard · 3=Easy · ←=Back';
+    // Set card-back height: since it's absolute, we need to set the scene height
+    adjustCardHeight();
+  } else {
+    document.getElementById('rating-area').classList.remove('visible');
+    document.getElementById('study-keyboard-hints').textContent = 'SPACE to flip · ← go back';
+  }
+}
+
+function adjustCardHeight() {
+  // Allow the card to auto-height based on content
+  // The back is absolute-positioned so we read its content height
+  const inner = document.getElementById('card-inner');
+  const back = document.getElementById('card-back');
+  // Temporarily make back static to measure
+  const backHeight = back.scrollHeight;
+  const frontHeight = document.getElementById('card-front').scrollHeight;
+  inner.style.minHeight = Math.max(frontHeight, backHeight) + 'px';
+}
+
+function rateCard(rating) {
+  if (!currentCard) return;
+  const deck = window._studyDeck;
+  const cardIdx = studyQueue[currentQueueIdx];
+
+  if (rating === 3) {
+    // Easy: mark done
+    studyDone.add(currentCard.r);
+    sessionEasyCount++;
+    studyQueue.splice(currentQueueIdx, 1);
+    // Don't advance index (next card is now at same index)
+    if (currentQueueIdx >= studyQueue.length) currentQueueIdx = studyQueue.length - 1;
+  } else if (rating === 2) {
+    // Hard: move back +20
+    const removedIdx = studyQueue.splice(currentQueueIdx, 1)[0];
+    const insertAt = Math.min(currentQueueIdx + 20, studyQueue.length);
+    studyQueue.splice(insertAt, 0, removedIdx);
+    sessionHardCount++;
+    // Don't advance — next card is at same index
+  } else {
+    // Again: move back +5
+    const removedIdx = studyQueue.splice(currentQueueIdx, 1)[0];
+    const insertAt = Math.min(currentQueueIdx + 5, studyQueue.length);
+    studyQueue.splice(insertAt, 0, removedIdx);
+    sessionAgainCount++;
+    studyAgainIds.push(currentCard.r);
+  }
+
+  saveProgress();
+
+  if (studyQueue.length === 0) {
+    endSession();
+    return;
+  }
+
+  if (currentQueueIdx >= studyQueue.length) currentQueueIdx = 0;
+
+  // Reset card inner height
+  document.getElementById('card-inner').style.minHeight = '';
+  renderCurrentCard();
+}
+
+function goBackCard() {
+  if (currentQueueIdx > 0) {
+    currentQueueIdx--;
+    document.getElementById('card-inner').style.minHeight = '';
+    renderCurrentCard();
+  }
+}
+
+function endSession() {
+  const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  const total = studyDone.size + sessionHardCount; // approximate
+
+  document.getElementById('cs-total').textContent = studyDone.size;
+  document.getElementById('cs-time').textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
+  document.getElementById('cs-easy').textContent = sessionEasyCount;
+  document.getElementById('cs-again').textContent = sessionAgainCount;
+
+  const totalRatings = sessionEasyCount + sessionHardCount + sessionAgainCount;
+  const barsHTML = `
+    <div class="bar-row">
+      <div class="bar-lbl" style="color:var(--easy)">Easy ✅</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="background:var(--easy);width:${totalRatings ? (sessionEasyCount/totalRatings*100) : 0}%">
+          ${sessionEasyCount > 0 ? sessionEasyCount : ''}
+        </div>
+      </div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-lbl" style="color:var(--hard)">Hard 😐</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="background:var(--hard);width:${totalRatings ? (sessionHardCount/totalRatings*100) : 0}%">
+          ${sessionHardCount > 0 ? sessionHardCount : ''}
+        </div>
+      </div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-lbl" style="color:var(--again)">Again ❌</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="background:var(--again);width:${totalRatings ? (sessionAgainCount/totalRatings*100) : 0}%">
+          ${sessionAgainCount > 0 ? sessionAgainCount : ''}
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('complete-bars').innerHTML = barsHTML;
+  document.getElementById('rating-area').classList.remove('visible');
+  clearProgress();
+  showScreen('screen-complete');
+}
+
+// ═══════════════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  const activeScreen = document.querySelector('.screen.active');
+  if (!activeScreen || activeScreen.id !== 'screen-study') return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    flipCard();
+  } else if (e.key === '1' && isFlipped) {
+    rateCard(1);
+  } else if (e.key === '2' && isFlipped) {
+    rateCard(2);
+  } else if (e.key === '3' && isFlipped) {
+    rateCard(3);
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    goBackCard();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// LOCAL STORAGE
+// ═══════════════════════════════════════════════════════════
+const STORAGE_KEY = 'jisho_progress_v2';
+
+function saveProgress() {
+  const data = {
+    deck: selectedDeck,
+    order: studyOrder,
+    doneIds: [...studyDone],
+    againIds: studyAgainIds,
+    timestamp: Date.now()
+  };
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════
+function openSettings() {
+  document.getElementById('settings-modal').classList.add('open');
+  document.getElementById('setting-romaji').checked = showRomaji;
+}
+
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+
+function toggleRomajiSetting() {
+  showRomaji = document.getElementById('setting-romaji').checked;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RELOAD MODAL
+// ═══════════════════════════════════════════════════════════
+function openReloadModal() {
+  document.getElementById('reload-modal').classList.add('open');
+}
+
+function closeReloadModal() {
+  document.getElementById('reload-modal').classList.remove('open');
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  const drop = document.getElementById('reload-drop');
+  if (drop) drop.classList.add('drag-over');
+  const wz = document.getElementById('welcome-upload-zone');
+  if (wz) wz.style.borderColor = 'var(--interviewer-accent)';
+}
+
+function handleFileDrop(e) {
+  e.preventDefault();
+  const drop = document.getElementById('reload-drop');
+  if (drop) drop.classList.remove('drag-over');
+  const wz = document.getElementById('welcome-upload-zone');
+  if (wz) wz.style.borderColor = '';
+  const file = e.dataTransfer.files[0];
+  if (file) processExcelFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processExcelFile(file);
+}
+
+function processExcelFile(file) {
+  const status = document.getElementById('reload-status');
+  if (status) status.textContent = 'Reading file...';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+
+      // Map Excel columns to short keys
+      const mapped = rows.map((row, i) => ({
+        r: row.priority_rank || row.r || (i+1),
+        j: row.japanese || row.j || '',
+        ro: row.romaji || row.ro || '',
+        fs: row.fast_speech || row.fs || '',
+        en: row.english || row.en || '',
+        pos: row.part_of_speech || row.pos || '',
+        jlpt: row.jlpt_level || row.jlpt || '',
+        pl: row.priority_level || row.pl || '',
+        cat: row.category || row.cat || '',
+        qt: row.question_type || row.qt || '',
+        ij: row.interviewer_jp || row.ij || '',
+        iro: row.interviewer_romaji || row.iro || '',
+        ien: row.interviewer_en || row.ien || '',
+        aj: row.answer_jp || row.aj || '',
+        aro: row.answer_romaji || row.aro || '',
+        aen: row.answer_en || row.aen || '',
+        cw: row.contraction_watch || row.cw || '',
+        rw: row.related_words || row.rw || '',
+        mh: row.memory_hook || row.mh || ''
+      })).filter(r => r.j);
+
+      if (mapped.length === 0) {
+        if (status) status.textContent = '⚠️ No valid cards found. Check column names.';
+        return;
+      }
+
+      vocabData = mapped;
+      document.getElementById('welcome-count').textContent = vocabData.length;
+      if (status) status.textContent = `✅ Loaded ${mapped.length} cards successfully!`;
+      setTimeout(closeReloadModal, 1500);
+      alert(`✅ Loaded ${mapped.length} cards from ${file.name}`);
+    } catch(err) {
+      if (status) status.textContent = '❌ Error reading file: ' + err.message;
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ═══════════════════════════════════════════════════════════
+// BROWSE MODE
+// ═══════════════════════════════════════════════════════════
+function initBrowse() {
+  // Populate category filter
+  const catSel = document.getElementById('browse-category');
+  catSel.innerHTML = '<option value="">All Categories</option>';
+  const cats = [...new Set(vocabData.map(v => v.cat))].sort();
+  cats.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = getCatEmoji(c) + ' ' + c;
+    catSel.appendChild(opt);
+  });
+  filterBrowse();
+}
+
+function filterBrowse() {
+  const q = document.getElementById('browse-search').value.toLowerCase();
+  const pf = document.getElementById('browse-priority').value;
+  const cf = document.getElementById('browse-category').value;
+  const jf = document.getElementById('browse-jlpt').value;
+
+  const filtered = vocabData.filter(v => {
+    if (pf && v.pl !== pf) return false;
+    if (cf && v.cat !== cf) return false;
+    if (jf && v.jlpt !== jf) return false;
+    if (q) {
+      const hay = (v.j + ' ' + v.ro + ' ' + v.en + ' ' + v.fs).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  renderBrowseTable(filtered);
+}
+
+function renderBrowseTable(cards) {
+  const tbody = document.getElementById('browse-tbody');
+  const empty = document.getElementById('browse-empty');
+  tbody.innerHTML = '';
+  expandedBrowseRow = null;
+
+  if (cards.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  cards.forEach((card, i) => {
+    const plClass = card.pl === 'MUST KNOW' ? 'pill-must' : card.pl === 'VERY IMPORTANT' ? 'pill-very' : 'pill-imp';
+    const plLabel = card.pl === 'MUST KNOW' ? '⭐' : card.pl === 'VERY IMPORTANT' ? '✅' : '🔶';
+
+    const tr = document.createElement('tr');
+    tr.dataset.rid = card.r;
+    tr.innerHTML = `
+      <td>${card.r}</td>
+      <td class="jp-cell">${esc(card.j)}</td>
+      <td style="color:var(--text-secondary)">${esc(card.ro)}</td>
+      <td class="fast-cell">${esc(card.fs)}</td>
+      <td>${esc(card.en)}</td>
+      <td><span class="pill ${plClass}">${plLabel} ${esc(card.pl)}</span></td>
+      <td style="color:var(--text-muted);font-size:12px">${getCatEmoji(card.cat)} ${esc(getCatShort(card.cat))}</td>
+    `;
+    tr.addEventListener('click', () => toggleBrowseExpand(card, tr));
+    tbody.appendChild(tr);
+  });
+}
+
+function toggleBrowseExpand(card, tr) {
+  const existingExpand = document.getElementById('browse-expand-row');
+
+  // Close if clicking same row
+  if (existingExpand && expandedBrowseRow && expandedBrowseRow.dataset.rid === tr.dataset.rid) {
+    existingExpand.remove();
+    tr.classList.remove('expanded');
+    expandedBrowseRow = null;
+    return;
+  }
+
+  // Remove existing
+  if (existingExpand) {
+    existingExpand.remove();
+    if (expandedBrowseRow) expandedBrowseRow.classList.remove('expanded');
+  }
+
+  expandedBrowseRow = tr;
+  tr.classList.add('expanded');
+
+  const isContractionQuiz = card.cat === 'M. Contractions';
+  const isFillerCat = card.cat === 'B. Fillers & Connectors';
+  const priorityClass = card.pl === 'MUST KNOW' ? 'pill-must' : card.pl === 'VERY IMPORTANT' ? 'pill-very' : 'pill-imp';
+
+  let s1 = `<div class="back-section section-meaning">
+    <div class="section-label">📚 Meaning</div>
+    <div class="meaning-native">🎧 ${esc(card.fs || card.j)}</div>
+    <div class="meaning-en">${esc(card.en)}</div>`;
+  if (card.mh) s1 += `<div class="memory-hook">💡 ${esc(card.mh)}</div>`;
+  if (card.cw) s1 += `<div class="contraction-watch">⚡ At Speed: ${esc(card.cw)}</div>`;
+  if (card.rw) s1 += `<div class="related-words">🔗 Related: ${esc(card.rw)}</div>`;
+  s1 += `</div>`;
+
+  let s2 = `<div class="back-section section-interviewer">
+    <div class="section-label">🎤 Interviewer Asks:</div>
+    <div class="sentence-jp">${esc(card.ij)}</div>
+    <div class="sentence-ro">${esc(card.iro)}</div>
+    <div class="sentence-en sentence-en-interviewer">${esc(card.ien)}</div>
+  </div>`;
+
+  let s3 = `<div class="back-section section-answer">
+    <div class="section-label">💬 Your Answer:</div>
+    <div class="sentence-jp">${esc(card.aj)}</div>
+    <div class="sentence-ro">${esc(card.aro)}</div>
+    <div class="sentence-en sentence-en-answer">${esc(card.aen)}</div>
+  </div>`;
+
+  const fillerWarn = isFillerCat
+    ? `<div class="filler-warning">⚠️ LISTENER WORD — focus on what comes AFTER it!</div>`
+    : '';
+
+  const expandTr = document.createElement('tr');
+  expandTr.id = 'browse-expand-row';
+  expandTr.classList.add('expand-row');
+  expandTr.innerHTML = `<td colspan="7">
+    <div class="expand-content">
+      <div class="expand-sections">${s1}${s2}${s3}</div>
+      ${fillerWarn}
+    </div>
+  </td>`;
+  tr.after(expandTr);
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+(function init() {
+  document.getElementById('welcome-count').textContent = vocabData.length;
+  showScreen('screen-welcome');
+})();
+</script>
+</body>
+</html>
