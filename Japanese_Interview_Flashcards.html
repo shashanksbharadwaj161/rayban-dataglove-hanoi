@@ -48,27 +48,28 @@ body {
   border-bottom: 1px solid var(--border);
   height: 56px;
   display: flex; align-items: center;
-  padding: 0 16px;
-  gap: 12px;
+  padding: 0 12px;
+  gap: 8px;
 }
 #nav .nav-brand {
   font-family: var(--font-jp);
-  font-size: 15px; font-weight: 700;
+  font-size: 14px; font-weight: 700;
   color: var(--text-primary);
   flex-shrink: 0;
-  margin-right: 4px;
+  white-space: nowrap;
 }
 #nav .nav-modes {
   display: flex; gap: 4px;
   flex: 1; justify-content: center;
+  min-width: 0;
 }
 .nav-btn {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  padding: 6px 16px; border-radius: 20px;
+  padding: 6px 14px; border-radius: 20px;
   cursor: pointer; font-size: 13px; font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.2s; white-space: nowrap;
 }
 .nav-btn:hover { border-color: var(--interviewer-accent); color: var(--text-primary); }
 .nav-btn.active {
@@ -77,20 +78,20 @@ body {
   color: #000;
 }
 #nav .nav-settings {
-  margin-left: auto;
+  flex-shrink: 0;
   background: transparent; border: none;
-  font-size: 20px; cursor: pointer; padding: 4px;
+  font-size: 20px; cursor: pointer; padding: 4px 6px;
   line-height: 1;
 }
 
 /* ─── SCREENS ─── */
 #app { padding-top: 56px; }
 .screen { display: none; min-height: calc(100vh - 56px); padding: 24px 16px; }
-.screen.active { display: block; }
+/* NOTE: showScreen() uses inline style.display — CSS classes are secondary */
 
 /* ─── SCREEN 0: WELCOME ─── */
 #screen-welcome {
-  display: flex; flex-direction: column;
+  flex-direction: column;
   align-items: center; justify-content: center;
   text-align: center; padding: 40px 24px;
 }
@@ -220,17 +221,17 @@ body {
 #btn-start-study:hover { opacity: 0.9; transform: translateY(-1px); }
 
 /* ─── SCREEN 2: STUDY ─── */
-#screen-study { padding: 0; display: flex; flex-direction: column; min-height: calc(100vh - 56px); }
+#screen-study { padding: 0; flex-direction: column; min-height: calc(100vh - 56px); }
 #progress-bar-container {
-  height: 4px; background: var(--border); position: sticky; top: 56px; z-index: 50;
+  height: 4px; background: var(--border); position: sticky; top: 56px; z-index: 50; flex-shrink: 0;
 }
 #progress-bar { height: 100%; background: var(--interviewer-accent); transition: width 0.4s ease; width: 0%; }
 #study-stats {
   display: flex; align-items: center; justify-content: center;
-  gap: 16px; padding: 10px 16px;
-  font-size: 13px; color: var(--text-secondary);
+  gap: 12px; padding: 8px 12px;
+  font-size: 12px; color: var(--text-secondary);
   background: var(--nav-bg); border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
+  flex-wrap: wrap; flex-shrink: 0;
 }
 #study-stats span { white-space: nowrap; }
 #study-stats .stat-done { color: var(--easy); }
@@ -238,40 +239,40 @@ body {
 #card-area {
   flex: 1; display: flex; align-items: flex-start;
   justify-content: center;
-  padding: 16px 16px 120px;
+  padding: 16px 12px;
+  padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .card-scene {
   width: 100%; max-width: 600px;
-  perspective: 1200px;
+  /* No 3D perspective needed — we use a clean crossfade flip */
 }
+/* ── Crossfade flip (height-safe, works on all mobile browsers) ── */
 .card-inner {
   position: relative; width: 100%;
-  transform-style: preserve-3d;
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 }
-.card-inner.flipped { transform: rotateY(180deg); }
 .card-face {
-  width: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  width: 100%;
   border-radius: 20px; overflow: hidden;
+  border: 1px solid var(--border);
 }
 .card-front {
   background: var(--card-bg);
-  border: 1px solid var(--border);
-  padding: 28px 24px;
+  padding: 28px 20px;
   display: flex; flex-direction: column;
   align-items: center; text-align: center;
-  min-height: 260px; justify-content: center;
+  min-height: 240px; justify-content: center;
+  transition: opacity 0.2s, transform 0.2s;
 }
 .card-back {
-  position: absolute; top: 0; left: 0; right: 0;
-  transform: rotateY(180deg);
   background: var(--card-bg);
-  border: 1px solid var(--border);
+  display: none;
+  transition: opacity 0.2s;
 }
-/* Dynamic height: front sets height, back is absolute */
-.card-scene.show-back .card-inner { /* dealt with by flipped class */ }
+.card-inner.flipped .card-front { display: none; }
+.card-inner.flipped .card-back { display: block; }
 
 .card-pills {
   display: flex; gap: 8px; margin-bottom: 16px;
@@ -350,20 +351,22 @@ body {
   position: fixed; bottom: 0; left: 0; right: 0;
   background: var(--nav-bg);
   border-top: 1px solid var(--border);
-  padding: 10px 16px 12px;
+  padding: 8px 12px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   display: none; z-index: 50;
+  gap: 8px;
 }
-#rating-area.visible { display: flex; gap: 8px; }
+#rating-area.visible { display: flex; }
 .rating-btn {
-  flex: 1; min-height: 64px; border: none; border-radius: 12px;
-  font-size: 14px; font-weight: 700; cursor: pointer;
-  transition: transform 0.15s, opacity 0.15s;
+  flex: 1; min-height: 60px; border: none; border-radius: 12px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: transform 0.12s, opacity 0.12s;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; line-height: 1.2;
+  gap: 2px; line-height: 1.2; touch-action: manipulation;
 }
-.rating-btn span.key-hint { font-size: 10px; opacity: 0.7; font-weight: 400; }
+.rating-btn span.key-hint { font-size: 10px; opacity: 0.6; font-weight: 400; }
 .rating-btn:hover { transform: translateY(-2px); opacity: 0.9; }
-.rating-btn:active { transform: translateY(0); }
+.rating-btn:active { transform: scale(0.96); }
 #btn-again { background: var(--again); color: #fff; }
 #btn-hard { background: var(--hard); color: #fff; }
 #btn-easy { background: var(--easy); color: #fff; }
@@ -396,28 +399,32 @@ body {
 .complete-actions .btn-browse { background: var(--interviewer-accent); color: #000; border-color: var(--interviewer-accent); }
 
 /* ─── BROWSE ─── */
-#screen-browse { padding: 16px; }
+#screen-browse { padding: 0; }
 .browse-filters {
   position: sticky; top: 56px; z-index: 40;
-  background: var(--bg); padding: 12px 0 8px;
+  background: var(--bg); padding: 10px 12px 8px;
   display: flex; gap: 8px; flex-wrap: wrap;
-  border-bottom: 1px solid var(--border); margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
 }
 .browse-filters input, .browse-filters select {
   background: var(--card-bg); border: 1px solid var(--border);
   color: var(--text-primary); border-radius: 10px;
-  padding: 8px 12px; font-size: 14px;
+  padding: 8px 10px; font-size: 14px;
+  -webkit-appearance: none; appearance: none;
 }
-.browse-filters input { flex: 1; min-width: 180px; }
-.browse-filters select { cursor: pointer; }
+.browse-filters input { flex: 1; min-width: 160px; }
+.browse-filters select { cursor: pointer; min-width: 0; flex: 1; }
 #browse-search::placeholder { color: var(--text-muted); }
-.browse-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+/* Table wrapper for horizontal scroll on mobile */
+.browse-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 12px 80px; }
+.browse-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 500px; }
 .browse-table thead th {
-  text-align: left; padding: 10px 12px;
+  text-align: left; padding: 10px 10px;
   background: var(--card-bg); color: var(--text-muted);
   font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
   border-bottom: 1px solid var(--border);
-  position: sticky; top: 140px;
+  position: sticky; top: 0; white-space: nowrap;
 }
 .browse-table tbody tr {
   border-bottom: 1px solid var(--border);
@@ -427,18 +434,32 @@ body {
 .browse-table tbody tr.expanded { background: rgba(79,195,247,0.07); }
 .browse-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.015); }
 .browse-table tbody tr:nth-child(even):hover { background: rgba(79,195,247,0.04); }
-.browse-table td { padding: 12px 12px; vertical-align: middle; }
-.browse-table td.jp-cell { font-family: var(--font-jp); font-size: 16px; font-weight: 600; }
+.browse-table td { padding: 10px 10px; vertical-align: middle; }
+.browse-table td.jp-cell { font-family: var(--font-jp); font-size: 16px; font-weight: 600; white-space: nowrap; }
 .browse-table td.fast-cell { font-family: var(--font-jp); color: var(--interviewer-accent); font-size: 13px; }
 .expand-row td {
   padding: 0 !important;
   background: rgba(15,17,23,0.9) !important;
   cursor: default;
 }
-.expand-content {
-  padding: 16px 20px;
-}
+.expand-content { padding: 12px 16px; }
 .expand-sections { display: flex; flex-direction: column; gap: 0; overflow: hidden; border-radius: 12px; }
+
+/* Mobile card list for browse (shown below ~500px) */
+.browse-card-list { display: none; padding: 8px 12px 80px; flex-direction: column; gap: 8px; }
+.browse-card-item {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 16px; cursor: pointer;
+  transition: border-color 0.15s;
+}
+.browse-card-item:hover, .browse-card-item.expanded { border-color: var(--interviewer-accent); }
+.browse-card-item .bci-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.browse-card-item .bci-jp { font-family: var(--font-jp); font-size: 20px; font-weight: 700; }
+.browse-card-item .bci-ro { font-size: 13px; color: var(--text-secondary); }
+.browse-card-item .bci-en { font-size: 13px; color: var(--text-primary); margin-top: 3px; }
+.browse-card-item .bci-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.browse-card-item .bci-detail { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: none; }
+.browse-card-item.expanded .bci-detail { display: block; }
 
 /* ─── SETTINGS MODAL ─── */
 .modal-overlay {
@@ -497,6 +518,18 @@ input:checked + .slider::before { transform: translateX(20px); }
 }
 .card-scene { animation: fadeSlideUp 0.3s ease; }
 
+/* Card inner pulse on flip */
+.card-inner {
+  transition: opacity 0.08s ease, transform 0.08s ease;
+}
+
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card-back { animation: cardReveal 0.2s ease; }
+.card-front { animation: cardReveal 0.2s ease; }
+
 /* ─── KEYBOARD HINT ─── */
 .keyboard-hints {
   text-align: center; color: var(--text-muted); font-size: 12px;
@@ -504,13 +537,39 @@ input:checked + .slider::before { transform: translateX(20px); }
 }
 
 /* ─── RESPONSIVE ─── */
-@media (max-width: 480px) {
-  .jp-word { font-size: 28px; }
-  #study-stats { font-size: 12px; gap: 10px; }
-  .browse-table thead th:nth-child(4),
-  .browse-table tbody td:nth-child(4) { display: none; }
-  .browse-table thead th:nth-child(6),
-  .browse-table tbody td:nth-child(6) { display: none; }
+
+/* Desktop: wider card, bigger text */
+@media (min-width: 640px) {
+  .card-front { padding: 36px 32px; min-height: 280px; }
+  .jp-word { font-size: 42px; }
+  .back-section { padding: 22px 28px; }
+  #card-area { padding: 24px 24px; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+  #rating-area { padding: 12px 24px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .rating-btn { min-height: 68px; font-size: 15px; }
+  #screen-setup { padding: 32px 24px; }
+  #screen-welcome { padding: 60px 24px; }
+  .welcome-stats { padding: 32px 48px; }
+}
+
+/* Mobile: switch browse to card list */
+@media (max-width: 540px) {
+  .browse-table-wrap { display: none; }
+  .browse-card-list { display: flex; }
+  .jp-word { font-size: 30px; }
+  .nav-btn { padding: 5px 10px; font-size: 12px; }
+  #nav .nav-brand { font-size: 13px; }
+  .rating-btn { min-height: 56px; font-size: 13px; }
+  .back-section { padding: 14px 16px; }
+  .meaning-native { font-size: 20px; }
+  .sentence-jp { font-size: 17px; }
+  .complete-stats { grid-template-columns: 1fr 1fr; }
+  .card-front { padding: 24px 16px; min-height: 220px; }
+  .setup-section { padding: 16px; }
+}
+
+@media (max-width: 380px) {
+  #nav .nav-brand { display: none; }
+  .jp-word { font-size: 26px; }
 }
 
 .contraction-front-hint {
@@ -708,20 +767,25 @@ input:checked + .slider::before { transform: translateX(20px); }
       <option value="N2">N2</option>
     </select>
   </div>
-  <table class="browse-table" id="browse-table">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Japanese</th>
-        <th>Romaji</th>
-        <th>Fast Speech</th>
-        <th>English</th>
-        <th>Priority</th>
-        <th>Category</th>
-      </tr>
-    </thead>
-    <tbody id="browse-tbody"></tbody>
-  </table>
+  <!-- Desktop: table view -->
+  <div class="browse-table-wrap">
+    <table class="browse-table" id="browse-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Japanese</th>
+          <th>Romaji</th>
+          <th>Fast Speech</th>
+          <th>English</th>
+          <th>Priority</th>
+          <th>Category</th>
+        </tr>
+      </thead>
+      <tbody id="browse-tbody"></tbody>
+    </table>
+  </div>
+  <!-- Mobile: card list view -->
+  <div class="browse-card-list" id="browse-card-list"></div>
   <div id="browse-empty" style="text-align:center;padding:40px;color:var(--text-muted);display:none">No cards match your filters.</div>
 </section>
 
@@ -819,19 +883,27 @@ let expandedBrowseRow = null;
 // ═══════════════════════════════════════════════════════════
 const screens = ['screen-welcome','screen-setup','screen-study','screen-complete','screen-browse'];
 
+// Map each screen to its correct display value
+const SCREEN_DISPLAY = {
+  'screen-welcome': 'flex',
+  'screen-setup': 'block',
+  'screen-study': 'flex',
+  'screen-complete': 'block',
+  'screen-browse': 'block'
+};
+
 function showScreen(id) {
   screens.forEach(s => {
     const el = document.getElementById(s);
-    if (el) el.classList.remove('active');
+    if (el) { el.style.display = 'none'; el.classList.remove('active'); }
   });
   const target = document.getElementById(id);
-  if (target) target.classList.add('active');
-
-  const ratingArea = document.getElementById('rating-area');
-  if (id === 'screen-study') {
-    // shown when flipped
-  } else {
-    ratingArea.classList.remove('visible');
+  if (target) {
+    target.style.display = SCREEN_DISPLAY[id] || 'block';
+    target.classList.add('active');
+  }
+  if (id !== 'screen-study') {
+    document.getElementById('rating-area').classList.remove('visible');
   }
 }
 
@@ -1121,27 +1193,27 @@ function renderBack(card, isContractionQuiz) {
 function flipCard() {
   if (!currentCard) return;
   isFlipped = !isFlipped;
-  document.getElementById('card-inner').classList.toggle('flipped', isFlipped);
+  const inner = document.getElementById('card-inner');
+
+  // Quick visual pulse on flip
+  inner.style.opacity = '0.85';
+  inner.style.transform = 'scale(0.985)';
+  setTimeout(() => {
+    inner.classList.toggle('flipped', isFlipped);
+    inner.style.opacity = '';
+    inner.style.transform = '';
+    // Scroll card area back to top so full back is readable
+    const cardArea = document.getElementById('card-area');
+    if (cardArea) cardArea.scrollTop = 0;
+  }, 80);
+
   if (isFlipped) {
     document.getElementById('rating-area').classList.add('visible');
     document.getElementById('study-keyboard-hints').textContent = '1=Again · 2=Hard · 3=Easy · ←=Back';
-    // Set card-back height: since it's absolute, we need to set the scene height
-    adjustCardHeight();
   } else {
     document.getElementById('rating-area').classList.remove('visible');
     document.getElementById('study-keyboard-hints').textContent = 'SPACE to flip · ← go back';
   }
-}
-
-function adjustCardHeight() {
-  // Allow the card to auto-height based on content
-  // The back is absolute-positioned so we read its content height
-  const inner = document.getElementById('card-inner');
-  const back = document.getElementById('card-back');
-  // Temporarily make back static to measure
-  const backHeight = back.scrollHeight;
-  const frontHeight = document.getElementById('card-front').scrollHeight;
-  inner.style.minHeight = Math.max(frontHeight, backHeight) + 'px';
 }
 
 function rateCard(rating) {
@@ -1182,14 +1254,12 @@ function rateCard(rating) {
   if (currentQueueIdx >= studyQueue.length) currentQueueIdx = 0;
 
   // Reset card inner height
-  document.getElementById('card-inner').style.minHeight = '';
   renderCurrentCard();
 }
 
 function goBackCard() {
   if (currentQueueIdx > 0) {
     currentQueueIdx--;
-    document.getElementById('card-inner').style.minHeight = '';
     renderCurrentCard();
   }
 }
@@ -1427,6 +1497,7 @@ function filterBrowse() {
   });
 
   renderBrowseTable(filtered);
+  renderBrowseCards(filtered);
 }
 
 function renderBrowseTable(cards) {
@@ -1458,6 +1529,53 @@ function renderBrowseTable(cards) {
     `;
     tr.addEventListener('click', () => toggleBrowseExpand(card, tr));
     tbody.appendChild(tr);
+  });
+}
+
+function renderBrowseCards(cards) {
+  const list = document.getElementById('browse-card-list');
+  if (!list) return;
+  list.innerHTML = '';
+  cards.forEach(card => {
+    const plClass = card.pl === 'MUST KNOW' ? 'pill-must' : card.pl === 'VERY IMPORTANT' ? 'pill-very' : 'pill-imp';
+    const div = document.createElement('div');
+    div.className = 'browse-card-item';
+    div.innerHTML = `
+      <div class="bci-top">
+        <span class="bci-jp">${esc(card.j)}</span>
+        <span class="bci-ro">${esc(card.ro)}</span>
+      </div>
+      <div class="bci-en">${esc(card.en)}</div>
+      <div class="bci-tags">
+        <span class="pill ${plClass}">${esc(card.pl)}</span>
+        <span class="pill pill-cat">${getCatEmoji(card.cat)} ${esc(getCatShort(card.cat))}</span>
+        ${card.jlpt ? `<span class="pill pill-pos">${esc(card.jlpt)}</span>` : ''}
+      </div>
+      <div class="bci-detail">
+        <div style="color:var(--interviewer-accent);font-family:var(--font-jp);font-size:15px;margin-bottom:6px">🎧 ${esc(card.fs)}</div>
+        ${card.mh ? `<div style="color:var(--must-know);font-style:italic;font-size:12px;margin-bottom:8px">💡 ${esc(card.mh)}</div>` : ''}
+        ${card.cw ? `<div style="color:var(--important);font-size:12px;margin-bottom:8px">⚡ ${esc(card.cw)}</div>` : ''}
+        <div class="expand-sections" style="margin-top:8px;border-radius:10px;overflow:hidden">
+          <div class="back-section section-interviewer">
+            <div class="section-label">🎤 Interviewer:</div>
+            <div class="sentence-jp" style="font-size:16px">${esc(card.ij)}</div>
+            <div class="sentence-ro">${esc(card.iro)}</div>
+            <div class="sentence-en sentence-en-interviewer">${esc(card.ien)}</div>
+          </div>
+          <div class="back-section section-answer">
+            <div class="section-label">💬 Your Answer:</div>
+            <div class="sentence-jp" style="font-size:16px">${esc(card.aj)}</div>
+            <div class="sentence-ro">${esc(card.aro)}</div>
+            <div class="sentence-en sentence-en-answer">${esc(card.aen)}</div>
+          </div>
+        </div>
+        ${card.cat === 'B. Fillers & Connectors' ? '<div class="filler-warning" style="margin:8px 0 0">⚠️ LISTENER WORD — focus on what comes AFTER it!</div>' : ''}
+      </div>
+    `;
+    div.addEventListener('click', () => {
+      div.classList.toggle('expanded');
+    });
+    list.appendChild(div);
   });
 }
 
